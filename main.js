@@ -49,9 +49,9 @@ function initBoard() {
 }
 
 function initEngine() {
-    // Use CDN hosted Stockfish WASM build
-    // The wasm.js script spawns a worker when imported via Worker constructor
-    const enginePath = 'https://cdn.jsdelivr.net/npm/stockfish@16/stockfish.wasm.js';
+    // Use local Stockfish WASM build (engine directory)
+    // The worker script itself will load the corresponding .wasm file next to it
+    const enginePath = 'engine/stockfish-17-lite.js'; // local engine directory
     engine = new Worker(enginePath);
 
     engine.onmessage = (e) => {

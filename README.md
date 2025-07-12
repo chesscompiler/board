@@ -42,9 +42,9 @@ Then navigate to http://localhost:8000 in your browser.
 |-----------------|---------|----------|
 | chessboard.js   | MIT     | https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js |
 | chess.js        | MIT     | https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js |
-| Stockfish WASM  | GPL v3  | https://cdn.jsdelivr.net/npm/stockfish@16/stockfish.wasm.js |
+| Stockfish WASM  | GPL v3  | local: `engine/stockfish-17-lite.js` & `engine/stockfish-17-lite.wasm` |
 
-All third-party libraries are fetched directly from the respective public CDNs – no files are bundled in the repo.
+Chessboard.js, chess.js, LZ-String are fetched from public CDNs while the **Stockfish** binary is bundled in the `engine/` folder.
 
 ## Customization
 
