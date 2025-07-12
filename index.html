@@ -1,13 +1,10 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-        content="Play and analyze chess online with Chess Compiler. Challenge our powerful AI bot, Compy, powered by Stockfish. Features include adjustable ELO, real-time evaluation, FEN support, and position sharing.">
-    <meta name="keywords"
-        content="chess, play chess, chess online, chess bot, chess engine, stockfish, analyze chess, chess game, chess compiler, compy, chess ai">
+    <meta name="description" content="Play and analyze chess online with Chess Compiler. Challenge our powerful AI bot, Compy, powered by Stockfish. Features include adjustable ELO, real-time evaluation, FEN support, and position sharing.">
+    <meta name="keywords" content="chess, play chess, chess online, chess bot, chess engine, stockfish, analyze chess, chess game, chess compiler, compy, chess ai">
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
     <title>Chess Compiler - Play & Analyze Chess with Compy AI</title>
@@ -17,13 +14,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
-
 <body>
     <div class="container">
         <header>
-            <a href="/" style="text-decoration: none;">
-                <h1>Chess Compiler</h1>
-            </a>
+            <a href="/" style="text-decoration: none;"><h1>Chess Compiler</h1></a>
         </header>
 
         <main class="game-area">
@@ -50,16 +44,14 @@
             </div>
 
             <div class="control-card actions-card">
-                <button id="flip-board-btn" class="skeleton"><span class="material-icons">swap_horiz</span>Flip
-                    Board</button>
+                <button id="flip-board-btn" class="skeleton"><span class="material-icons">swap_horiz</span>Flip Board</button>
                 <button id="share-btn" class="skeleton"><span class="material-icons">share</span>Share</button>
             </div>
-
+            
             <div class="control-card">
                 <div class="control-group fen-group">
                     <label for="fen-input">FEN String</label>
-                    <input type="text" id="fen-input"
-                        placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
+                    <input type="text" id="fen-input" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
                 </div>
             </div>
 
@@ -78,25 +70,17 @@
         <div class="footer-content">
             <div class="footer-section about">
                 <h2>About Chess Compiler & Compy</h2>
-                <p>Chess Compiler is a modern chess interface designed for both casual players and enthusiasts. Our
-                    powerful AI bot, "Compy", is powered by Stockfish, one of the world's strongest chess engines.
-                    Challenge Compy at various ELO strengths, analyze your games, and improve your skills.</p>
+                <p>Chess Compiler is a modern chess interface designed for both casual players and enthusiasts. Our powerful AI bot, "Compy", is powered by Stockfish, one of the world's strongest chess engines. Challenge Compy at various ELO strengths, analyze your games, and improve your skills.</p>
             </div>
             <div class="footer-section features">
                 <h2>Features</h2>
                 <ul>
-                    <li><strong>Play vs. AI:</strong> Challenge our Stockfish-based bot, Compy, with adjustable ELO
-                        strength (1350 to 2750).</li>
-                    <li><strong>Real-time Evaluation:</strong> A dynamic evaluation bar shows you the state of the game
-                        in real-time.</li>
-                    <li><strong>FEN Support:</strong> Load any chess position using a FEN string to analyze or play from
-                        that point.</li>
-                    <li><strong>Share Positions:</strong> Easily share a link to the current board position with friends
-                        or for analysis.</li>
-                    <li><strong>Modern Interface:</strong> A clean, responsive, and intuitive user interface to focus on
-                        your game.</li>
-                    <li><strong>Flip Board:</strong> View the board from either White's or Black's perspective at any
-                        time.</li>
+                    <li><strong>Play vs. AI:</strong> Challenge our Stockfish-based bot, Compy, with adjustable ELO strength (1350 to 2750).</li>
+                    <li><strong>Real-time Evaluation:</strong> A dynamic evaluation bar shows you the state of the game in real-time.</li>
+                    <li><strong>FEN Support:</strong> Load any chess position using a FEN string to analyze or play from that point.</li>
+                    <li><strong>Share Positions:</strong> Easily share a link to the current board position with friends or for analysis.</li>
+                    <li><strong>Modern Interface:</strong> A clean, responsive, and intuitive user interface to focus on your game.</li>
+                    <li><strong>Flip Board:</strong> View the board from either White's or Black's perspective at any time.</li>
                     <li><strong>Offline Support:</strong> Play even when you're not connected to the internet.</li>
                 </ul>
             </div>
@@ -125,13 +109,7 @@
     <script type="module" src="script.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
-            // Get current directory from the current page URL
-            const currentDir = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-
-            // Construct the full service worker path based on current directory
-            const swPath = `${currentDir}/service-worker.js`;
-
-            navigator.serviceWorker.register(swPath)
+            navigator.serviceWorker.register('service-worker.js')
                 .then(registration => {
                     //console.log('Service Worker registered with scope:', registration.scope);
                 })
@@ -139,8 +117,6 @@
                     console.error('Service Worker registration failed:', error);
                 });
         }
-
     </script>
 </body>
-
 </html>

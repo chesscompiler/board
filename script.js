@@ -1,4 +1,4 @@
-import { Chess, WHITE, BLACK, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING } from '/chess.js';
+import { Chess, WHITE, BLACK, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING } from './chess.js';
 
 const stockfish = new Worker('engine/stockfish-17-lite-single.js');
 const boardElement = document.getElementById('board');
