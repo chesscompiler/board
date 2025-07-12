@@ -71,6 +71,7 @@
         <h3>FEN</h3>
         <textarea id="fen-input"></textarea>
         <button id="load-fen-btn">Load FEN</button>
+        <button id="share-link-btn">Copy Share Link</button>
 
         <h3>Engine Output</h3>
         <pre id="engine-output" style="max-height:200px; overflow-y:auto; background:#222; color:#0f0; padding:10px;"></pre>
@@ -80,6 +81,8 @@
     <!-- Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js" integrity="sha512-fbxaCwJFe/ktT7bdD0YFifYlXg8fcc/gfGF0TuIjQmb98Q8kfeaRJMd3DHzF7BUiKBKTW3BBkQFKsx7UEeT71Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js" integrity="sha512-JgP3A9nFWaqMP+4eQCSULWQfGuTbkkTJcPP3U6nY/klrB5VJnyT1wEe4VbXZy80jbCKXnVIMybfCbS+2sTwVMw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- LZ-String for compressing FEN in URLs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js" integrity="sha512-7TEikvMNM6IanXaU9RhpZRQ2GZUFAmDi3Vo7Elask25fMTmPhE6eSaPhy4xnP42dp7HtmZKpE0zE+3HhHV77sA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- Main script -->
     <script src="main.js"></script>

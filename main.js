@@ -9,8 +9,27 @@ let isPlaying = false;     // playing vs engine flag
 let engineDepth = 15;      // default search depth
 let playerColor = 'white'; // human plays as white by default
 
+// Helper for URL FEN compression
+const compressFen = (fen) => LZString.compressToEncodedURIComponent(fen);
+const decompressFen = (enc) => LZString.decompressFromEncodedURIComponent(enc);
+
 /* -------------------- INIT -------------------- */
 window.addEventListener('DOMContentLoaded', () => {
+    // Load FEN from URL param if present
+    const urlFen = (() => {
+        const p = new URLSearchParams(window.location.search);
+        const param = p.get('fen');
+        if (!param) return null;
+
+        // Try decompress first, fallback to raw FEN
+        const decoded = decompressFen(param) || decodeURIComponent(param);
+        return decoded;
+    })();
+
+    if (urlFen) {
+        try { game.load(urlFen); } catch (_) { /* ignore invalid */ }
+    }
+
     initBoard();
     initEngine();
     bindUI();
@@ -19,7 +38,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function initBoard() {
     board = Chessboard('board', {
         draggable: true,
-        position: 'start',
+        position: game.fen(),
         sparePieces: true, // allow editing
         onDrop: onPieceDrop,
         onChange: onBoardChange
@@ -72,6 +91,18 @@ function bindUI() {
         } else {
             alert('Invalid FEN');
         }
+    });
+
+    // Share link button
+    $('share-link-btn').addEventListener('click', () => {
+        const fen = game.fen();
+        const encoded = compressFen(fen);
+        const shareUrl = `${window.location.origin}${window.location.pathname}?fen=${encoded}`;
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            alert('Shareable link copied to clipboard!');
+        }).catch(() => {
+            prompt('Copy this link:', shareUrl);
+        });
     });
 
     // Analyze buttons
