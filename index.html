@@ -1,90 +1,122 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess Analysis Board</title>
-
-    <!-- chessboard.js CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" integrity="sha512-Lw50BZxrZhjBYfprpIxxuzt8Ob5pujqyJHyTErjcvO3XscASuuqGKv6/N0nhk/LDd+rLsKkLxzGiuSmYVSve7Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 40px;
-            background-color: #f4f4f4;
-        }
-
-        #board {
-            width: 400px;
-            max-width: 90vw;
-        }
-
-        .side-panel {
-            flex: 1 1 300px;
-            max-width: 600px;
-        }
-
-        textarea {
-            width: 100%;
-            height: 100px;
-            resize: vertical;
-        }
-
-        button {
-            margin: 5px 0;
-            padding: 8px 14px;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-
-        #eval {
-            font-weight: bold;
-            margin-top: 10px;
-            font-size: 1.1rem;
-        }
-
-        .hidden {
-            display: none;
-        }
-    </style>
+    <meta name="description" content="Play and analyze chess online with Chess Compiler. Challenge our powerful AI bot, Compy, powered by Stockfish. Features include adjustable ELO, real-time evaluation, FEN support, and position sharing.">
+    <meta name="keywords" content="chess, play chess, chess online, chess bot, chess engine, stockfish, analyze chess, chess game, chess compiler, compy, chess ai">
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+    <title>Chess Compiler - Play & Analyze Chess with Compy AI</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="board"></div>
+    <div class="container">
+        <header>
+            <a href="/" style="text-decoration: none;"><h1>Chess Compiler</h1></a>
+        </header>
 
-    <div class="side-panel">
-        <h2>Controls</h2>
-        <button id="flip-btn">Flip Board</button>
-        <button id="reset-btn">Start Position</button>
-        <button id="clear-btn">Clear Board</button>
-        <br>
-        <button id="analyze-btn">Analyze Position</button>
-        <button id="stop-analyze-btn" class="hidden">Stop Analysis</button>
-        <br>
-        <button id="play-btn">Play vs Stockfish</button>
-        <button id="stop-play-btn" class="hidden">Stop Playing</button>
+        <main class="game-area">
+            <div id="evaluation-bar-container">
+                <div id="evaluation-bar"></div>
+            </div>
+            <div id="board-wrapper">
+                <div id="board"></div>
+            </div>
+        </main>
 
-        <h3>FEN</h3>
-        <textarea id="fen-input"></textarea>
-        <button id="load-fen-btn">Load FEN</button>
-        <button id="share-link-btn">Copy Share Link</button>
+        <aside class="controls-area">
+            <div class="control-card bot-card">
+                <div class="bot-profile">
+                    <div id="bot-avatar-container" class="skeleton">
+                        <img data-src="bot.png" alt="Bot Avatar" id="bot-avatar">
+                    </div>
+                    <h3 id="bot-name" class="skeleton skeleton-text">Compy</h3>
+                </div>
+                <div class="bot-chat-bubble skeleton skeleton-bubble">
+                    <p id="status-message">Loading...</p>
+                </div>
+                <button id="play-bot-btn" class="skeleton"><span class="material-icons">play_arrow</span>Play</button>
+            </div>
 
-        <h3>Engine Output</h3>
-        <pre id="engine-output" style="max-height:200px; overflow-y:auto; background:#222; color:#0f0; padding:10px;"></pre>
-        <div id="eval">Eval: --</div>
+            <div class="control-card actions-card">
+                <button id="flip-board-btn" class="skeleton"><span class="material-icons">swap_horiz</span>Flip Board</button>
+                <button id="share-btn" class="skeleton"><span class="material-icons">share</span>Share</button>
+            </div>
+            
+            <div class="control-card">
+                <div class="control-group fen-group">
+                    <label for="fen-input">FEN String</label>
+                    <input type="text" id="fen-input" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
+                </div>
+            </div>
+
+            <div class="control-card" id="engine-setup-card">
+                <div id="engine-controls" class="control-group">
+                    <div class="setup-item">
+                        <label for="elo-slider">ELO Strength: <span id="elo-value">2000</span></label>
+                        <input type="range" id="elo-slider" min="1350" max="2750" value="2000" step="50">
+                    </div>
+                </div>
+            </div>
+        </aside>
     </div>
 
-    <!-- Dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js" integrity="sha512-fbxaCwJFe/ktT7bdD0YFifYlXg8fcc/gfGF0TuIjQmb98Q8kfeaRJMd3DHzF7BUiKBKTW3BBkQFKsx7UEeT71Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js" integrity="sha512-JgP3A9nFWaqMP+4eQCSULWQfGuTbkkTJcPP3U6nY/klrB5VJnyT1wEe4VbXZy80jbCKXnVIMybfCbS+2sTwVMw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- LZ-String for compressing FEN in URLs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js" integrity="sha512-7TEikvMNM6IanXaU9RhpZRQ2GZUFAmDi3Vo7Elask25fMTmPhE6eSaPhy4xnP42dp7HtmZKpE0zE+3HhHV77sA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section about">
+                <h2>About Chess Compiler & Compy</h2>
+                <p>Chess Compiler is a modern chess interface designed for both casual players and enthusiasts. Our powerful AI bot, "Compy", is powered by Stockfish, one of the world's strongest chess engines. Challenge Compy at various ELO strengths, analyze your games, and improve your skills.</p>
+            </div>
+            <div class="footer-section features">
+                <h2>Features</h2>
+                <ul>
+                    <li><strong>Play vs. AI:</strong> Challenge our Stockfish-based bot, Compy, with adjustable ELO strength (1350 to 2750).</li>
+                    <li><strong>Real-time Evaluation:</strong> A dynamic evaluation bar shows you the state of the game in real-time.</li>
+                    <li><strong>FEN Support:</strong> Load any chess position using a FEN string to analyze or play from that point.</li>
+                    <li><strong>Share Positions:</strong> Easily share a link to the current board position with friends or for analysis.</li>
+                    <li><strong>Modern Interface:</strong> A clean, responsive, and intuitive user interface to focus on your game.</li>
+                    <li><strong>Flip Board:</strong> View the board from either White's or Black's perspective at any time.</li>
+                    <li><strong>Offline Support:</strong> Play even when you're not connected to the internet.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Chess Compiler | Where Code Meets Strategy</p>
+        </div>
+    </footer>
 
-    <!-- Main script -->
-    <script src="main.js"></script>
+    <div id="game-over-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="game-over-message"></h2>
+            <button id="play-again-btn"><span class="material-icons">replay</span>Play Again</button>
+        </div>
+    </div>
+
+    <div id="share-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>Share Position</h2>
+            <p>Copy this link to share the current board position.</p>
+            <input type="text" id="share-link-input" readonly>
+            <button id="copy-link-btn"><span class="material-icons">content_copy</span>Copy Link</button>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(registration => {
+                    //console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('Service Worker registration failed:', error);
+                });
+        }
+    </script>
 </body>
 </html>
