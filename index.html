@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W3G0720L78"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-W3G0720L78');
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta charset="UTF-8">
+    <title>Chess Compiler Board Visualizer - Interactive Chess Board</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="https://chesscompiler.github.io/learn/board.html">
+    <meta name="description"
+        content="Chess Compiler Board Visualizer: Set up, customize, and visualize chess positions in 3D. Highlight squares, draw arrows, and export images for chess study.">
+    <meta name="keywords"
+        content="chess, chess board, chess visualizer, FEN, chess arrows, highlight squares, 3D chess, chesscompiler, board editor, chess export">
+    <meta property="og:title" content="Chess Compiler Board Visualizer - Interactive Chess Board in 3D">
+    <meta property="og:description"
+        content="Set up, customize, and visualize chess positions in 3D. Highlight squares, draw arrows, and export images for chess study.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Chess Compiler">
+    <meta property="og:url" content="https://chesscompiler.github.io/learn/board.html">
+    <meta property="og:image" content="https://chesscompiler.github.io/assets/og-learn.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Chess Compiler Board Visualizer - Interactive Chess Board in 3D">
+    <meta name="twitter:description"
+        content="Set up, customize, and visualize chess positions in 3D. Highlight squares, draw arrows, and export images for chess study.">
+    <meta name="twitter:image" content="https://chesscompiler.github.io/assets/og-learn.png">
+    <link rel="icon" href="https://chesscompiler.github.io/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --blue1: #48e3fb;
+            --blue2: #00b6ff;
+            --blue3: #00a3fe;
+            --blue4: #0480ff;
+            --blue5: #0057fe;
+            --purple1: #643efe;
+            --purple2: #5e50ff;
+            --purple3: #5765ff;
+            --purple4: #5177fe;
+            --purple5: #5081ff;
+            --purple6: #479afe;
+            --purple7: #2929d6;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-highlight: rgba(255, 255, 255, 0.05);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --main-dark: #15172a;
+            --text-main: #ffffff;
+            --text-sub: #e1e3eb;
+            --text-muted: #9ba1b9;
+            --btn-primary: linear-gradient(135deg, var(--blue2), var(--purple1));
+            --btn-secondary: linear-gradient(135deg, var(--purple2), var(--purple7));
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #111827;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: var(--glass-shadow), 0 0 0 1px var(--glass-border);
+            border: 1px solid var(--glass-border);
+            animation: containerSlideIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        @keyframes containerSlideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--glass-bg), var(--glass-highlight));
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .header-section .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--blue1), var(--purple1));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+            text-shadow: none;
+        }
+
+        .subtitle {
+            color: var(--text-sub);
+            font-size: 1.2rem;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-group {
+            background: var(--glass-bg);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-group::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--btn-primary);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .control-group:hover {
+            border-color: var(--blue2);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(74, 158, 255, 0.15);
+        }
+
+        .control-group:hover::before {
+            opacity: 1;
+        }
+
+        .control-group h3 {
+            margin-bottom: 15px;
+            color: #ffffff;
+            font-size: 1.2em;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: rgba(20, 20, 35, 0.8);
+            color: #e0e0e0;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: #888;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #4a9eff 0%, #6c5ce7 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(74, 158, 255, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .board-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .chess-board {
+            position: relative;
+            border: 4px solid #2d3748;
+            border-radius: 8px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            background: #2d3748;
+            display: inline-block;
+        }
+
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+        }
+
+        .square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-size: 36px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .square.light {
+            background-color: #f0d9b5;
+        }
+
+        .square.dark {
+            background-color: #b58863;
+        }
+
+        .square.highlighted {
+            background-color: #ffff00 !important;
+            box-shadow: inset 0 0 0 3px #ffd700;
+        }
+
+        .square.from-square {
+            background-color: #ff6b6b !important;
+            box-shadow: inset 0 0 0 3px #ff5252;
+        }
+
+        .square.to-square {
+            background-color: #4ecdc4 !important;
+            box-shadow: inset 0 0 0 3px #26c6da;
+        }
+
+        .square:hover {
+            transform: scale(1.05);
+            z-index: 2;
+        }
+
+        .piece {
+            user-select: none;
+            z-index: 20;
+            /* Increased to be above arrows */
+            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+            width: 85%;
+            height: 85%;
+            object-fit: contain;
+            position: relative;
+        }
+
+        .coordinates {
+            position: absolute;
+            font-size: 12px;
+            font-weight: bold;
+            color: #a0a0a0;
+        }
+
+        .file-coord {
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .rank-coord {
+            left: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .arrows {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .preset-buttons button {
+            flex: 1;
+            min-width: 120px;
+            margin-top: 0;
+        }
+
+        .color-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .color-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-input-group input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .info-panel {
+            background: rgba(45, 45, 65, 0.6);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            border-left: 5px solid #4a9eff;
+        }
+
+        .info-panel h4 {
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .info-panel p {
+            color: #b0b0b0;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .square {
+                width: 45px;
+                height: 45px;
+                font-size: 28px;
+            }
+
+            .preset-buttons {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .board-container {
+                transform: scale(0.92);
+                transform-origin: top center;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .board-container {
+                transform: scale(0.8);
+                transform-origin: top center;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .board-container {
+                transform: scale(0.75);
+                transform-origin: top center;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .board-container {
+                transform: scale(0.65);
+                transform-origin: top center;
+            }
+        }
+
+        .glass-nav {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 100px;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 90%;
+            max-width: 1200px;
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            background-clip: padding-box;
+            overflow: hidden;
+            opacity: 0;
+            transform: translate(-50%, -30px) scale(0.98);
+            animation: glassNavSlideIn 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+            transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes glassNavSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -30px) scale(0.98);
+            }
+            60% {
+                opacity: 1;
+                transform: translate(-50%, 6px) scale(1.01);
+            }
+            80% {
+                opacity: 1;
+                transform: translate(-50%, -2px) scale(1.005);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(1);
+            }
+        }
+
+        .glass-nav a,
+        .glass-nav .logo {
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+        }
+
+        .glass-nav .logo {
+            font-weight: 700;
+            font-size: 1.5rem;
+            background: linear-gradient(to right, var(--blue1), var(--purple1));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+
+        .menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background 0.2s;
+            z-index: 102;
+            position: relative;
+        }
+
+        .menu-btn .material-icons {
+            font-size: 2.2rem;
+            color: var(--text-main);
+        }
+
+        .glass-nav nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .glass-nav nav a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .glass-nav nav a:hover {
+            color: var(--blue1);
+        }
+
+        .glass-nav .nav-cta {
+            background: var(--btn-primary);
+            padding: 0.5rem 1.5rem;
+            border-radius: 100px;
+            color: var(--text-main) !important;
+        }
+
+        @media (max-width: 768px) {
+            .glass-nav {
+                flex-direction: row;
+                gap: 0;
+                padding: 0.7rem 1rem;
+                width: 90%;
+                max-width: 100vw;
+                transition: flex-direction 0.3s, gap 0.3s, padding 0.3s;
+                position: relative;
+                opacity: 0;
+                transform: translate(-50%, -30px) scale(0.98);
+                animation: glassNavSlideIn 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+            }
+
+            .glass-nav.menu-open {
+                flex-direction: column;
+                gap: 1rem;
+                border-radius: 20px;
+                padding: 1rem;
+            }
+
+            .glass-nav .logo {
+                font-size: 1.2rem;
+            }
+
+            .menu-btn {
+                display: block;
+                margin-left: auto;
+                margin-right: 0;
+                position: relative;
+                top: unset;
+                right: unset;
+                z-index: 102;
+            }
+
+            .glass-nav nav {
+                position: static;
+                width: 100%;
+                background: none;
+                border: none;
+                box-shadow: none;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                justify-content: flex-start;
+                gap: 1.2rem;
+                opacity: 1;
+                pointer-events: auto;
+                transform: none;
+                transition: none;
+                padding: 0;
+            }
+
+            .glass-nav nav a {
+                font-size: 1.2rem;
+                padding: 0.7rem 2rem;
+                border-radius: 100px;
+                background: none;
+                color: var(--text-main);
+                text-align: center;
+                transition: background 0.2s;
+            }
+
+            .glass-nav nav .nav-cta {
+                background: var(--btn-primary);
+                color: var(--text-main) !important;
+            }
+
+            .glass-nav nav:not(.open) {
+                display: none;
+            }
+
+            .hide-on-mobile {
+                display: none !important;
+            }
+        }
+
+        /* ...existing code for rest of the page... */
+    </style>
+</head>
+
+<body>
+    <header class="glass-nav">
+        <a href="/" class="logo">Chess Compiler</a>
+        <button id="menu-toggle" class="menu-btn" aria-label="Open menu">
+            <span class="material-icons">menu</span>
+        </button>
+        <nav id="main-nav">
+            <a href="/learn" class="hide-on-mobile">Learn</a>
+            <a href="/board" class="hide-on-mobile">Board</a>
+            <a href="/index.html#puzzles" class="hide-on-mobile">Puzzles</a>
+            <a href="/index.html#about" class="hide-on-mobile">About</a>
+            <a href="/index.html#contact" class="nav-cta">Get Started</a>
+        </nav>
+    </header>
+    <div class="container" style="margin-top:6rem;">
+        <div class="header-section">
+            <div class="logo">Chess Compiler</div>
+            <div class="subtitle">Board Visualizer &amp; Editor</div>
+        </div>
+
+        <div class="board-container">
+            <div class="chess-board" id="chessBoard">
+                <div class="board-grid" id="boardGrid"></div>
+                <svg class="arrows" id="arrowsSvg"></svg>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <h3>Position Setup</h3>
+                <label for="fenInput">FEN String:</label>
+                <textarea id="fenInput"
+                    placeholder="Enter FEN string (e.g., rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1)">rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1</textarea>
+
+                <div class="preset-buttons">
+                    <button onclick="loadPreset('start')">Starting Position</button>
+                    <button onclick="loadPreset('scholars')">Scholar's Mate</button>
+                    <button onclick="loadPreset('sicilian')">Sicilian Defense</button>
+                    <button onclick="loadPreset('empty')">Empty Board</button>
+                </div>
+
+                <button onclick="generateBoard()">Generate Board</button>
+            </div>
+
+            <div class="control-group">
+                <h3>Visual Enhancements</h3>
+
+                <label for="highlightSquares">Highlight Squares (e.g., e4,d4):</label>
+                <input type="text" id="highlightSquares" placeholder="e4,d4,f6">
+
+                <label for="arrowInput">Arrows (from-to, e.g., e2-e4,d2-d4):</label>
+                <input type="text" id="arrowInput" placeholder="e2-e4,d2-d4,g1-f3">
+
+                <div class="color-inputs">
+                    <div class="color-input-group">
+                        <label for="arrowColor">Arrow Color:</label>
+                        <input type="color" id="arrowColor" value="#ff6b6b">
+                    </div>
+                    <div class="color-input-group">
+                        <label for="highlightColor">Highlight Color:</label>
+                        <input type="color" id="highlightColor" value="#ffff00">
+                    </div>
+                </div>
+
+                <label for="boardSize">Board Size:</label>
+                <select id="boardSize" onchange="updateBoardSize()">
+                    <option value="60">Standard (60px)</option>
+                    <option value="50">Small (50px)</option>
+                    <option value="70">Large (70px)</option>
+                    <option value="80">Extra Large (80px)</option>
+                </select>
+
+                <button onclick="applyEnhancements()">Apply Enhancements</button>
+            </div>
+
+            <div class="control-group">
+                <h3><span class="material-icons" style="margin-right: 0.5rem; vertical-align: middle; color: var(--blue2);">file_download</span>Export & Share</h3>
+                
+                <button onclick="copyFEN()">
+                    <span class="material-icons" style="margin-right: 0.5rem; font-size: 1rem;">content_copy</span>
+                    Copy FEN
+                </button>
+                
+                <button onclick="exportImage()">
+                    <span class="material-icons" style="margin-right: 0.5rem; font-size: 1rem;">image</span>
+                    Export as Image
+                </button>
+                
+                <button onclick="generateURL()">
+                    <span class="material-icons" style="margin-right: 0.5rem; font-size: 1rem;">link</span>
+                    Generate Share URL
+                </button>
+                
+                <button onclick="resetBoard()">
+                    <span class="material-icons" style="margin-right: 0.5rem; font-size: 1rem;">refresh</span>
+                    Reset Board
+                </button>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <h4>How to Use:</h4>
+            <p><strong>FEN Input:</strong> Enter a valid FEN string to set up any chess position</p>
+            <p><strong>Highlights:</strong> Enter square names separated by commas (e.g., e4,d4,nf6)</p>
+            <p><strong>Arrows:</strong> Enter moves in algebraic notation separated by commas (e.g., e2-e4,d2-d4)</p>
+            <p><strong>Colors:</strong> Click the color squares to customize arrow and highlight colors</p>
+        </div>
+    </div>
+
+    <script>
+        const pieceImages = {
+            'K': 'wK', 'Q': 'wQ', 'R': 'wR', 'B': 'wB', 'N': 'wN', 'P': 'wP',
+            'k': 'bK', 'q': 'bQ', 'r': 'bR', 'b': 'bB', 'n': 'bN', 'p': 'bP'
+        };
+
+        const baseImageUrl = '/assests/';
+
+        const presets = {
+            start: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            scholars: 'rnbqkb1r/pppp1ppp/5n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 4 4',
+            sicilian: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2',
+            empty: '8/8/8/8/8/8/8/8 w - - 0 1'
+        };
+
+        function loadPreset(preset) {
+            document.getElementById('fenInput').value = presets[preset];
+            generateBoard();
+        }
+
+        function generateBoard() {
+            const fen = document.getElementById('fenInput').value.trim();
+            if (!fen) return;
+
+            const boardGrid = document.getElementById('boardGrid');
+            boardGrid.innerHTML = '';
+
+            // Parse FEN
+            const fenParts = fen.split(' ');
+            const position = fenParts[0];
+            const ranks = position.split('/');
+
+            // Create squares
+            for (let rank = 0; rank < 8; rank++) {
+                const rankData = ranks[rank];
+                let file = 0;
+
+                for (let char of rankData) {
+                    if (isNaN(char)) {
+                        // It's a piece
+                        const square = createSquare(rank, file, char);
+                        boardGrid.appendChild(square);
+                        file++;
+                    } else {
+                        // It's a number of empty squares
+                        const emptySquares = parseInt(char);
+                        for (let i = 0; i < emptySquares; i++) {
+                            const square = createSquare(rank, file, null);
+                            boardGrid.appendChild(square);
+                            file++;
+                        }
+                    }
+                }
+            }
+
+            // Add coordinates
+            addCoordinates();
+            applyEnhancements();
+        }
+
+        function createSquare(rank, file, piece) {
+            const boardSize = parseInt(document.getElementById('boardSize').value);
+            const square = document.createElement('div');
+            square.className = `square ${(rank + file) % 2 === 0 ? 'light' : 'dark'}`;
+            square.dataset.rank = rank;
+            square.dataset.file = file;
+            square.dataset.square = String.fromCharCode(97 + file) + (8 - rank);
+            square.style.width = boardSize + 'px';
+            square.style.height = boardSize + 'px';
+
+            if (piece) {
+                const pieceElement = document.createElement('img');
+                pieceElement.className = 'piece';
+                pieceElement.src = baseImageUrl + pieceImages[piece] + '.svg';
+                pieceElement.alt = piece;
+                pieceElement.onerror = function () {
+                    // Fallback to Unicode if image fails to load
+                    const fallbackUnicode = {
+                        'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+                        'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+                    };
+                    const spanElement = document.createElement('span');
+                    spanElement.className = 'piece';
+                    spanElement.textContent = fallbackUnicode[piece] || piece;
+                    spanElement.style.fontSize = '36px';
+                    this.parentNode.replaceChild(spanElement, this);
+                };
+                square.appendChild(pieceElement);
+            }
+
+            return square;
+        }
+
+        function addCoordinates() {
+            const board = document.getElementById('chessBoard');
+            const boardSize = parseInt(document.getElementById('boardSize').value);
+
+            // Remove existing coordinates
+            const existingCoords = board.querySelectorAll('.coordinates');
+            existingCoords.forEach(coord => coord.remove());
+
+            // Add file coordinates (a-h)
+            for (let i = 0; i < 8; i++) {
+                const coord = document.createElement('div');
+                coord.className = 'coordinates file-coord';
+                coord.textContent = String.fromCharCode(97 + i);
+                coord.style.left = `${i * boardSize + boardSize / 2}px`;
+                board.appendChild(coord);
+            }
+
+            // Add rank coordinates (1-8)
+            for (let i = 0; i < 8; i++) {
+                const coord = document.createElement('div');
+                coord.className = 'coordinates rank-coord';
+                coord.textContent = 8 - i;
+                coord.style.top = `${i * boardSize + boardSize / 2}px`;
+                board.appendChild(coord);
+            }
+        }
+
+        function applyEnhancements() {
+            // Clear previous highlights
+            const squares = document.querySelectorAll('.square');
+            squares.forEach(square => {
+                square.classList.remove('highlighted', 'from-square', 'to-square');
+            });
+
+            // Apply highlights
+            const highlightInput = document.getElementById('highlightSquares').value;
+            const highlightColor = document.getElementById('highlightColor').value;
+
+            if (highlightInput) {
+                const highlightSquares = highlightInput.split(',').map(s => s.trim().toLowerCase());
+                highlightSquares.forEach(squareName => {
+                    const square = document.querySelector(`[data-square="${squareName}"]`);
+                    if (square) {
+                        square.classList.add('highlighted');
+                        square.style.backgroundColor = highlightColor + '80'; // Add transparency
+                    }
+                });
+            }
+
+            // Draw arrows
+            drawArrows();
+        }
+
+        function drawArrows() {
+            const arrowInput = document.getElementById('arrowInput').value;
+            const arrowColor = document.getElementById('arrowColor').value;
+            const svg = document.getElementById('arrowsSvg');
+            svg.innerHTML = '';
+
+            if (!arrowInput) return;
+
+            const arrows = arrowInput.split(',').map(s => s.trim());
+
+            arrows.forEach(arrow => {
+                const [from, to] = arrow.split('-').map(s => s.trim().toLowerCase());
+                if (from && to) {
+                    drawArrow(svg, from, to, arrowColor);
+                }
+            });
+        }
+
+        function drawArrow(svg, from, to, color) {
+            const fromSquare = document.querySelector(`[data-square="${from}"]`);
+            const toSquare = document.querySelector(`[data-square="${to}"]`);
+
+            if (!fromSquare || !toSquare) return;
+
+            const fromRect = fromSquare.getBoundingClientRect();
+            const toRect = toSquare.getBoundingClientRect();
+            const svgRect = svg.getBoundingClientRect();
+
+            const x1 = fromRect.left + fromRect.width / 2 - svgRect.left;
+            const y1 = fromRect.top + fromRect.height / 2 - svgRect.top;
+            const x2 = toRect.left + toRect.width / 2 - svgRect.left;
+            const y2 = toRect.top + toRect.height / 2 - svgRect.top;
+
+            // Create arrow line
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', '2.2'); // Smaller arrow
+            line.setAttribute('marker-end', 'url(#arrowhead)');
+            line.setAttribute('stroke-linecap', 'round');
+            //line.setAttribute('filter', 'url(#arrow-outline)');
+
+            // Create arrowhead marker
+            let defs = svg.querySelector('defs');
+            if (!defs) {
+                defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                svg.appendChild(defs);
+            }
+            // Remove previous marker to allow color change
+            const oldMarker = defs.querySelector('#arrowhead');
+            if (oldMarker) oldMarker.remove();
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', 'arrowhead');
+            marker.setAttribute('markerWidth', '6'); // Smaller head
+            marker.setAttribute('markerHeight', '4');
+            marker.setAttribute('refX', '5.5');
+            marker.setAttribute('refY', '2');
+            marker.setAttribute('orient', 'auto');
+
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            polygon.setAttribute('points', '0 0, 6 2, 0 4');
+            polygon.setAttribute('fill', color);
+            polygon.setAttribute('stroke', '#fff');
+            polygon.setAttribute('stroke-width', '0.8');
+
+            marker.appendChild(polygon);
+            defs.appendChild(marker);
+
+            // Add outline filter for arrow line
+            if (!defs.querySelector('#arrow-outline')) {
+                const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+                filter.setAttribute('id', 'arrow-outline');
+                filter.innerHTML = `
+                    <feMorphology in="SourceAlpha" result="DILATED" operator="dilate" radius="0.5"/>
+                    <feFlood flood-color="#fff" flood-opacity="0.3" result="OUTLINE_COLOR"/>
+                    <feComposite in="OUTLINE_COLOR" in2="DILATED" operator="in" result="OUTLINE"/>
+                    <feMerge>
+                        <feMergeNode in="OUTLINE"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                `;
+                defs.appendChild(filter);
+            }
+
+            svg.appendChild(line);
+
+            // Highlight from and to squares
+            fromSquare.classList.add('from-square');
+            toSquare.classList.add('to-square');
+        }
+
+        function updateBoardSize() {
+            const size = document.getElementById('boardSize').value;
+            const squares = document.querySelectorAll('.square');
+
+            squares.forEach(square => {
+                square.style.width = size + 'px';
+                square.style.height = size + 'px';
+                square.style.fontSize = (size * 0.6) + 'px';
+            });
+
+            // Update coordinates position after board size change
+            addCoordinates();
+        }
+
+        // Initialize with starting position
+        generateBoard();
+
+        // Mobile nav toggle (copied from index.html for consistency)
+        const menuBtn = document.getElementById('menu-toggle');
+        const nav = document.getElementById('main-nav');
+        const glassNav = document.querySelector('.glass-nav');
+        menuBtn.addEventListener('click', () => {
+            nav.classList.toggle('open');
+            menuBtn.classList.toggle('open');
+            document.body.classList.toggle('nav-open');
+            if (window.innerWidth <= 768) {
+                glassNav.classList.toggle('menu-open', nav.classList.contains('open'));
+            }
+        });
+        // Close nav on link click (mobile)
+        document.querySelectorAll('#main-nav a').forEach(link => {
+            link.addEventListener('click', () => {
+                nav.classList.remove('open');
+                menuBtn.classList.remove('open');
+                document.body.classList.remove('nav-open');
+                if (window.innerWidth <= 768) {
+                    glassNav.classList.remove('menu-open');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
