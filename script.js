@@ -6,6 +6,7 @@ const statusMessageElement = document.getElementById('status-message');
 const fenInputElement = document.getElementById('fen-input');
 const newGameBtn = document.getElementById('play-bot-btn');
 const evaluationBar = document.getElementById('evaluation-bar');
+const evaluationScore = document.getElementById('evaluation-score');
 const eloSlider = document.getElementById('elo-slider');
 const eloValue = document.getElementById('elo-value');
 const flipBoardBtn = document.getElementById('flip-board-btn');
@@ -18,6 +19,9 @@ const shareModal = document.getElementById('share-modal');
 const shareLinkInput = document.getElementById('share-link-input');
 const copyLinkBtn = document.getElementById('copy-link-btn');
 const botAvatar = document.getElementById('bot-avatar');
+const prevMoveBtn = document.getElementById('prev-move-btn');
+const nextMoveBtn = document.getElementById('next-move-btn');
+const closeModalBtn = document.getElementById('close-modal-btn');
 
 
 const pieceImages = {
@@ -46,6 +50,69 @@ let isBoardFlipped = false;
 let playerColor = WHITE;
 let isGameActive = false;
 let isEvaluatingOnly = false;
+let gameHistory = [];
+let currentMoveIndex = -1;
+
+function navigateHistory(direction) {
+    if (!isGameActive) return;
+
+    const newIndex = currentMoveIndex + direction;
+
+    if (newIndex >= 0 && newIndex < gameHistory.length && newIndex !== currentMoveIndex) {
+        currentMoveIndex = newIndex;
+        const historyEntry = gameHistory[currentMoveIndex];
+        
+        chess.load(historyEntry.fen);
+        renderBoard();
+        
+        prevMoveBtn.disabled = newIndex <= 0;
+        nextMoveBtn.disabled = newIndex >= gameHistory.length - 1;
+
+        if (historyEntry.evaluation !== null && historyEntry.evaluation !== undefined) {
+            updateEvaluationBar(historyEntry.evaluation);
+            updateStatus('Navigating history (cached).');
+        } else {
+            // Disable buttons during navigation to prevent race conditions
+            prevMoveBtn.disabled = true;
+            nextMoveBtn.disabled = true;
+            
+            isEvaluatingOnly = true;
+            updateStatus('Navigating history...');
+            stockfish.postMessage('stop'); // Stop any ongoing analysis
+            stockfish.postMessage(`position fen ${historyEntry.fen}`);
+            stockfish.postMessage('go depth 15');
+        }
+    }
+}
+
+
+function updateHistory(newMove = null) {
+    // If we make a new move while in the middle of the history, truncate the future.
+    if (currentMoveIndex < gameHistory.length - 1) {
+        gameHistory = gameHistory.slice(0, currentMoveIndex + 1);
+    }
+
+    if(newMove) {
+        gameHistory.push(newMove);
+    }
+    
+    currentMoveIndex = gameHistory.length - 1;
+
+    prevMoveBtn.disabled = currentMoveIndex <= 0;
+    nextMoveBtn.disabled = true; // Nothing to go forward to yet
+}
+
+function handleBoardEdit(from, to) {
+    if (from === to) return;
+    const pieceToMove = chess.remove(from);
+    if (pieceToMove) {
+        chess.put(pieceToMove, to);
+    }
+    chess.setComment('Position set up manually.');
+    updateHistory({fen: chess.fen(), comment: chess.getComment(), evaluation: null});
+    renderBoard();
+    updateStatus('Position set. Ready to play.');
+}
 
 function renderBoard() {
     const board = chess.board();
@@ -103,6 +170,30 @@ function renderBoard() {
     }
 }
 
+ // Mobile nav toggle (from index.html)
+ const menuBtn = document.getElementById('menu-toggle');
+ const nav = document.getElementById('main-nav');
+ const glassNav = document.querySelector('.glass-nav');
+ menuBtn.addEventListener('click', () => {
+     nav.classList.toggle('open');
+     menuBtn.classList.toggle('open');
+     document.body.classList.toggle('nav-open');
+     if (window.innerWidth <= 768) {
+         glassNav.classList.toggle('menu-open', nav.classList.contains('open'));
+     }
+ });
+ // Close nav on link click (mobile)
+ document.querySelectorAll('#main-nav a').forEach(link => {
+     link.addEventListener('click', () => {
+         nav.classList.remove('open');
+         menuBtn.classList.remove('open');
+         document.body.classList.remove('nav-open');
+         if (window.innerWidth <= 768) {
+             glassNav.classList.remove('menu-open');
+         }
+     });
+ });
+
 function clearValidMoveDots() {
     const dots = document.querySelectorAll('.valid-move-dot');
     dots.forEach(dot => dot.remove());
@@ -145,12 +236,20 @@ function updateEvaluationBar(evaluation) {
         evaluationBar.style.height = `${percentage}%`;
         evaluationBar.style.width = '100%';
     }
+
+    const score = (evaluation / 100).toFixed(1);
+    evaluationScore.textContent = score;
 }
 
 function movePiece(fromRow, fromCol, toRow, toCol) {
     const from = String.fromCharCode(97 + fromCol) + (8 - fromRow);
     const to = String.fromCharCode(97 + toCol) + (8 - toRow);
     
+    if (!isGameActive) {
+        handleBoardEdit(from, to);
+        return;
+    }
+
     const move = chess.move({
         from: from,
         to: to,
@@ -166,6 +265,7 @@ function movePiece(fromRow, fromCol, toRow, toCol) {
         return;
     }
 
+    updateHistory({fen: chess.fen(), move: move, evaluation: null });
     renderBoard(); // Re-render the board with the player's move
     checkGameOver();
 
@@ -175,20 +275,28 @@ function movePiece(fromRow, fromCol, toRow, toCol) {
             updateStatus("I am thinking...");
             stockfish.postMessage(`position fen ${chess.fen()}`);
             stockfish.postMessage('go depth 15');
-        }, 750);
+        }, 550);
     }
 }
 
 function handleAiMove(bestMove) {
-    chess.move(bestMove);
+    const move = chess.move(bestMove);
+    updateHistory({fen: chess.fen(), move: move, evaluation: null});
     renderBoard(); // Re-render the board with the AI's move
-    stockfish.postMessage(`position fen ${chess.fen()}`);
     updateStatus('Your turn.');
     checkGameOver();
+
+    if (isGameActive && !chess.isGameOver()) {
+        isEvaluatingOnly = true;
+        stockfish.postMessage(`position fen ${chess.fen()}`);
+        stockfish.postMessage('go depth 15');
+    }
+    
+    // After AI moves, check if user can go forward
+    nextMoveBtn.disabled = currentMoveIndex >= gameHistory.length - 1;
 }
 
 boardElement.addEventListener('dragstart', (e) => {
-    if (!isGameActive) return;
     if (e.target.classList.contains('piece')) {
         if (selectedSquare) {
             selectedSquare.classList.remove('selected');
@@ -198,7 +306,7 @@ boardElement.addEventListener('dragstart', (e) => {
 
         const piece = e.target.dataset.piece;
         const isWhitePiece = piece === piece.toUpperCase();
-        if ((playerColor === WHITE && !isWhitePiece) || (playerColor === BLACK && isWhitePiece)) {
+        if (isGameActive && ((playerColor === WHITE && !isWhitePiece) || (playerColor === BLACK && isWhitePiece))) {
             return; 
         }
 
@@ -242,12 +350,38 @@ boardElement.addEventListener('dragend', (e) => {
     }
     draggedPieceElement = null;
     draggedPiece = null;
-    clearValidMoveDots();
+    if (isGameActive) {
+        clearValidMoveDots();
+    }
 });
 
 boardElement.addEventListener('click', (e) => {
     const square = e.target.closest('.square');
     if (!square) return;
+
+    if (!isGameActive) {
+        if (selectedSquare) {
+            const fromRow = selectedSquare.dataset.row;
+            const fromCol = selectedSquare.dataset.col;
+            const toRow = square.dataset.row;
+            const toCol = square.dataset.col;
+            
+            const from = String.fromCharCode(97 + parseInt(fromCol)) + (8 - parseInt(fromRow));
+            const to = String.fromCharCode(97 + parseInt(toCol)) + (8 - parseInt(toRow));
+
+            selectedSquare.classList.remove('selected');
+            selectedSquare = null;
+            
+            handleBoardEdit(from, to);
+        } else {
+            const clickedPiece = chess.board()[square.dataset.row][square.dataset.col];
+            if (clickedPiece) {
+                selectedSquare = square;
+                selectedSquare.classList.add('selected');
+            }
+        }
+        return;
+    }
 
     const clickedPiece = chess.board()[square.dataset.row][square.dataset.col];
     const isWhiteTurn = chess.turn() === WHITE;
@@ -304,7 +438,7 @@ stockfish.onmessage = (event) => {
 
     if (message === 'readyok') {
         stockfish.postMessage('setoption name UCI_LimitStrength value true');
-        stockfish.postMessage(`setoption name UCI_Elo value ${eloSlider.value}`);
+        stockfish.postMessage(`setoption name UCI_Elo value 2750`);
         updateStatus('Ready to play.');
         renderBoard();
         removeSkeletons();
@@ -313,7 +447,13 @@ stockfish.onmessage = (event) => {
     if (message.startsWith('bestmove')) {
         if (isEvaluatingOnly) {
             isEvaluatingOnly = false;
-            updateStatus('Position loaded. Your turn.');
+            // The evaluation for the current position is now cached.
+            // We just need to ensure nav buttons are in the correct state.
+            if (statusMessageElement.textContent.startsWith('Navigating history')) {
+                updateStatus('Position loaded.');
+            }
+            prevMoveBtn.disabled = currentMoveIndex <= 0;
+            nextMoveBtn.disabled = currentMoveIndex >= gameHistory.length - 1;
             return;
         }
         const bestMove = message.split(' ')[1];
@@ -327,6 +467,9 @@ stockfish.onmessage = (event) => {
         if (match) {
             const evaluation = parseInt(match[1]);
             lastEvaluation = evaluation;
+            if (gameHistory[currentMoveIndex]) {
+                gameHistory[currentMoveIndex].evaluation = evaluation;
+            }
             updateEvaluationBar(evaluation);
         } else {
             match = message.match(/score mate (-?\d+)/);
@@ -335,6 +478,9 @@ stockfish.onmessage = (event) => {
                 // A mate is a very high evaluation. Use a large number, preserving the sign.
                 const evaluation = (mateIn > 0 ? 1 : -1) * (20000 - Math.abs(mateIn));
                 lastEvaluation = evaluation;
+                if (gameHistory[currentMoveIndex]) {
+                    gameHistory[currentMoveIndex].evaluation = evaluation;
+                }
                 updateEvaluationBar(evaluation);
             }
         }
@@ -344,16 +490,21 @@ stockfish.onmessage = (event) => {
 function resetGame() {
     isGameActive = false;
     chess.reset();
+    gameHistory = [];
+    currentMoveIndex = -1;
+    updateHistory({fen: chess.fen(), comment: "Initial position.", evaluation: 0});
     renderBoard();
     
-    fenInputElement.value = '';
+    fenInputElement.value = chess.fen();
     fenInputElement.disabled = false;
     flipBoardBtn.disabled = false;
+    prevMoveBtn.disabled = true;
+    nextMoveBtn.disabled = true;
     
     gameOverModal.classList.add('hidden');
     newGameBtn.innerHTML = '<span class="material-icons">play_arrow</span>Play';
     
-    updateStatus('Enter a FEN or click Play to start.');
+    updateStatus('Set up the board or click Play to start.');
     stockfish.postMessage('stop');
     stockfish.postMessage('ucinewgame');
     stockfish.postMessage('isready');
@@ -529,9 +680,20 @@ newGameBtn.addEventListener('click', () => {
         isGameActive = true;
         fenInputElement.disabled = true;
         flipBoardBtn.disabled = true;
+
+        document.querySelector('.move-navigation').style.display = 'flex';
+        
+        if (selectedSquare) {
+            selectedSquare.classList.remove('selected');
+            selectedSquare = null;
+        }
+
+        // Assume player color based on board orientation.
         playerColor = isBoardFlipped ? BLACK : WHITE;
 
         stockfish.postMessage(`position fen ${chess.fen()}`);
+        prevMoveBtn.disabled = currentMoveIndex <= 0;
+        nextMoveBtn.disabled = currentMoveIndex >= gameHistory.length - 1;
 
         if (chess.turn() !== playerColor) {
             setTimeout(() => {
@@ -542,17 +704,23 @@ newGameBtn.addEventListener('click', () => {
         } else {
             updateStatus('Your turn.');
         }
-        newGameBtn.innerHTML = '<span class="material-icons">stop</span>New Game';
+        newGameBtn.innerHTML = '<span class="material-icons">stop</span>Start New Game';
     } else {
         resetGame();
     }
 });
+
+prevMoveBtn.addEventListener('click', () => navigateHistory(-1));
+nextMoveBtn.addEventListener('click', () => navigateHistory(1));
 
 fenInputElement.addEventListener('change', () => {
     if (isGameActive) return;
     const fen = fenInputElement.value.trim();
     if (!fen) {
         chess.reset();
+        gameHistory = [];
+        currentMoveIndex = -1;
+        updateHistory({fen: chess.fen(), comment: "Initial position.", evaluation: 0});
         renderBoard();
         stockfish.postMessage(`position fen ${chess.fen()}`);
         updateStatus('Ready to play.');
@@ -562,6 +730,9 @@ fenInputElement.addEventListener('change', () => {
     try {
         chess.load(fen);
         renderBoard();
+        gameHistory = [];
+        currentMoveIndex = -1;
+        updateHistory({fen: chess.fen(), comment: "Loaded from FEN.", evaluation: null});
         stockfish.postMessage(`position fen ${chess.fen()}`);
         updateStatus('Position loaded. Analyzing...');
         isEvaluatingOnly = true;
@@ -608,9 +779,21 @@ copyLinkBtn.addEventListener('click', () => {
     }, 2000);
 });
 
+function closeModal(modal) {
+    modal.classList.add('hidden');
+}
+
+closeModalBtn.addEventListener('click', () => closeModal(gameOverModal));
+
 shareModal.addEventListener('click', (e) => {
     if (e.target === shareModal) {
-        shareModal.classList.add('hidden');
+        closeModal(shareModal);
+    }
+});
+
+gameOverModal.addEventListener('click', (e) => {
+    if (e.target === gameOverModal) {
+        closeModal(gameOverModal);
     }
 });
 

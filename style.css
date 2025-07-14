@@ -51,6 +51,25 @@
     }
 }
 
+@keyframes animated-border-glow {
+    0% {
+        border-color: var(--purple2);
+        box-shadow: 0 0 10px var(--purple2);
+    }
+    33% {
+        border-color: var(--blue2);
+        box-shadow: 0 0 15px var(--blue2);
+    }
+    66% {
+        border-color: var(--purple5);
+        box-shadow: 0 0 10px var(--purple5);
+    }
+    100% {
+        border-color: var(--purple2);
+        box-shadow: 0 0 10px var(--purple2);
+    }
+}
+
 .skeleton {
     animation: skeleton-pulse 1.5s infinite ease-in-out;
     color: transparent !important;
@@ -66,6 +85,7 @@
     border: 3px solid var(--accent-color);
     box-shadow: 0 0 10px var(--accent-color);
     transition: border-color 0.5s ease, box-shadow 0.5s ease;
+    animation: animated-border-glow 4s linear infinite;
 }
 
 #bot-avatar-container.skeleton {
@@ -115,7 +135,7 @@ body {
         "header header"
         "game controls"
         "game controls";
-    grid-template-columns: auto 1fr;
+    grid-template-columns: 1fr 340px;
     grid-template-rows: auto 1fr;
     gap: 30px;
     width: 100%;
@@ -153,13 +173,13 @@ header h1 {
 .game-area {
     grid-area: game;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
 }
 
 #evaluation-bar-container {
     width: 20px;
-    height: 80vmin;
-    max-height: 600px;
+    height: clamp(300px, 80vmin, 600px);
     background-color: var(--primary-color);
     border: 1px solid var(--border-color);
     border-radius: 10px;
@@ -168,6 +188,7 @@ header h1 {
     margin-right: 20px;
     overflow: hidden;
     box-shadow: var(--shadow-color);
+    position: relative;
 }
 
 #evaluation-bar {
@@ -178,12 +199,23 @@ header h1 {
     box-shadow: 0 0 15px var(--blue2);
 }
 
+#evaluation-score {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px black;
+    z-index: 2;
+    text-orientation: mixed;
+}
+
 #board-wrapper {
     position: relative;
-    width: 80vmin;
-    height: 80vmin;
-    max-width: 600px;
-    max-height: 600px;
+    width: clamp(300px, 80vmin, 600px);
+    height: clamp(300px, 80vmin, 600px);
 }
 
 #board {
@@ -197,7 +229,7 @@ header h1 {
     height: 100%;
     border: 5px solid var(--glass-bg);
     box-shadow: var(--shadow-color);
-    border-radius: 5px;
+    border-radius: 10px;
     overflow: hidden;
 }
 
@@ -352,7 +384,41 @@ header h1 {
 .actions-card {
     flex-direction: row;
     justify-content: flex-start;
+    align-items: center;
     gap: 15px;
+}
+
+.move-navigation {
+    display: none;
+    gap: 10px;
+    margin-left: auto;
+}
+
+#prev-move-btn,
+#next-move-btn {
+    padding: 8px;
+    min-width: 40px;
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-sub);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+#prev-move-btn:not(:disabled):hover,
+#next-move-btn:not(:disabled):hover {
+    background: var(--accent-color);
+    border-color: var(--purple1);
+    box-shadow: 0 0 10px var(--accent-color);
+    color: #fff;
+}
+
+#prev-move-btn:disabled,
+#next-move-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--glass-bg);
+    box-shadow: none;
 }
 
 #flip-board-btn, #play-bot-btn, #share-btn, #play-again-btn, #copy-link-btn {
@@ -376,6 +442,10 @@ header h1 {
 #flip-board-btn, #play-bot-btn, #share-btn {
     width: auto;
     flex-grow: 0;
+}
+
+#flip-board-btn:disabled {
+    display: none;
 }
 
 #play-again-btn, #copy-link-btn {
@@ -542,8 +612,9 @@ header h1 {
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 20;
-    backdrop-filter: blur(5px);
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
 }
 
 .modal-overlay.hidden {
@@ -551,27 +622,45 @@ header h1 {
 }
 
 .modal-content {
-    background-color: var(--primary-color);
+    background: var(--primary-color);
     padding: 30px;
-    border-radius: 10px;
+    border-radius: 15px;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     text-align: center;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-color);
+    position: relative;
+    width: 90%;
+    max-width: 400px;
 }
 
 .modal-content h2 {
-    margin: 0 0 20px 0;
-    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 20px;
     background: var(--text-highlight);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    color: var(--text-main);
+}
+
 #share-link-input {
-    width: 100%;
+    width: calc(100% - 20px);
     padding: 10px;
     margin: 10px 0 15px 0;
     border: 1px solid var(--border-color);
@@ -590,8 +679,8 @@ header h1 {
             "game"
             "controls";
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto 1fr;
         gap: 20px;
+        padding: 0 15px;
     }
 
     .footer-content {
@@ -603,12 +692,24 @@ header h1 {
     .game-area {
         flex-direction: column;
         align-items: center;
-        gap: 15px;
+        width: 100%;
+    }
+
+    .actions-card {
+        order: -1; /* Move actions card to the top */
+    }
+
+    .move-navigation {
+        grid-area: nav;
+        justify-content: center;
+        gap: 1rem;
+        width: 100%;
     }
 
     #board-wrapper {
-        width: 95vw;
-        height: 95vw;
+        width: 100%;
+        height: auto;
+        padding-bottom: 100%; /* Maintain 1:1 aspect ratio */
         max-width: none;
         max-height: none;
     }
@@ -619,22 +720,32 @@ header h1 {
     }
     
     #evaluation-bar-container {
-        width: 95vw;
-        height: 20px;
-        flex-direction: row;
+        width: 100%;
+        height: 15px;
+        flex-direction: row; /* Horizontal bar */
         margin-right: 0;
+        margin-bottom: 15px;
+        order: -1; /* Show above the board */
     }
 
     #evaluation-bar {
         height: 100%;
-        width: 50%; /* Start at 50% for an equal position */
+        width: 50%; /* Start at 50% */
         transition: width 0.5s ease;
     }
 
+    #evaluation-score {
+        writing-mode: horizontal-tb;
+        bottom: auto;
+        top: 50%;
+        left: 10px;
+        transform: translateY(-50%);
+    }
+
     .controls-area {
-        flex-direction: column;
-        width: 90vw;
-        gap: 20px;
+        grid-area: controls;
+        width: 100%;
+        max-width: none;
     }
 }
 
@@ -722,4 +833,206 @@ header h1 {
     padding-top: 20px;
     border-top: 1px solid var(--border-color);
     color: var(--text-muted);
+}
+
+.logo {
+    font-weight: 700;
+    font-size: 3rem;
+    background: linear-gradient(to right, var(--blue1), var(--purple1));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+
+}
+
+.glass-nav {
+    position: relative;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+
+    background: rgba(255, 255, 255, 0.05);
+    /* subtle transparency */
+    border-radius: 100px;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 90%;
+    max-width: 1200px;
+
+    /* Glassmorphism styles */
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* subtle inner stroke */
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    /* soft light cast */
+    background-clip: padding-box;
+    overflow: hidden;
+
+    /* --- Animation styles --- */
+    opacity: 0;
+    transform: translate(-50%, -30px) scale(0.98);
+    animation: glassNavSlideIn 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+    transition:
+        opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes glassNavSlideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -30px) scale(0.98);
+    }
+
+    60% {
+        opacity: 1;
+        transform: translate(-50%, 6px) scale(1.01);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -2px) scale(1.005);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+}
+
+/* Optional: Enhance inner elements like nav links or logo */
+.glass-nav a,
+.glass-nav .logo {
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    font-weight: 500;
+}
+
+.glass-nav .logo {
+    font-weight: 700;
+    font-size: 1.5rem;
+    background: linear-gradient(to right, var(--blue1), var(--purple1));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+}
+
+.menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background 0.2s;
+    z-index: 102;
+    position: relative;
+}
+
+.menu-btn .material-icons {
+    font-size: 2.2rem;
+    color: var(--text-main);
+}
+
+.glass-nav nav {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.glass-nav nav a {
+    color: var(--text-main);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.glass-nav nav a:hover {
+    color: var(--blue1);
+}
+
+.glass-nav .nav-cta {
+    background: var(--btn-primary);
+    padding: 0.5rem 1.5rem;
+    border-radius: 100px;
+    color: var(--text-main) !important;
+}
+
+@media (max-width: 768px) {
+    .glass-nav {
+        flex-direction: row;
+        gap: 0;
+        padding: 0.7rem 1rem;
+        width: 90%;
+        max-width: 100vw;
+        transition: flex-direction 0.3s, gap 0.3s, padding 0.3s;
+        position: relative;
+        /* Animation for mobile as well */
+        opacity: 0;
+        transform: translate(-50%, -30px) scale(0.98);
+        animation: glassNavSlideIn 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+    }
+
+    .glass-nav.menu-open {
+        flex-direction: column;
+        gap: 1rem;
+        border-radius: 20px;
+        padding: 1rem;
+    }
+
+    .glass-nav .logo {
+        font-size: 1.2rem;
+    }
+
+    .menu-btn {
+        display: block;
+        margin-left: auto;
+        margin-right: 0;
+        position: relative;
+        top: unset;
+        right: unset;
+        z-index: 102;
+    }
+
+    .glass-nav nav {
+        position: static;
+        width: 100%;
+        background: none;
+        border: none;
+        box-shadow: none;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 1.2rem;
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+        transition: none;
+        padding: 0;
+    }
+
+    .glass-nav nav a {
+        font-size: 1.2rem;
+        padding: 0.7rem 2rem;
+        border-radius: 100px;
+        background: none;
+        color: var(--text-main);
+        text-align: center;
+        transition: background 0.2s;
+    }
+
+    .glass-nav nav .nav-cta {
+        background: var(--btn-primary);
+        color: var(--text-main) !important;
+    }
+
+    .glass-nav nav:not(.open) {
+        display: none;
+    }
 }

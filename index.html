@@ -1,10 +1,24 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W3G0720L78"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-W3G0720L78');
+    </script>
+    <meta name="theme-color" content="#15172a" media="(prefers-color-scheme: dark)">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Play and analyze chess online with Chess Compiler. Challenge our powerful AI bot, Compy, powered by Stockfish. Features include adjustable ELO, real-time evaluation, FEN support, and position sharing.">
-    <meta name="keywords" content="chess, play chess, chess online, chess bot, chess engine, stockfish, analyze chess, chess game, chess compiler, compy, chess ai">
+    <meta name="description"
+        content="Play and analyze chess online with Chess Compiler. Challenge our powerful AI bot, Compy, powered by Stockfish. Features include adjustable ELO, real-time evaluation, FEN support, and position sharing.">
+    <meta name="keywords"
+        content="chess, play chess, chess online, chess bot, chess engine, stockfish, analyze chess, chess game, chess compiler, compy, chess ai">
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
     <title>Chess Compiler - Play & Analyze Chess with Compy AI</title>
@@ -14,15 +28,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div class="container">
-        <header>
-            <a href="/" style="text-decoration: none;"><h1>Chess Compiler</h1></a>
+        <header class="glass-nav">
+            <div class="logo">Chess Compiler</div>
+            <button id="menu-toggle" class="menu-btn" aria-label="Open menu">
+                <span class="material-icons">menu</span>
+            </button>
+            <nav id="main-nav">
+                <a href="/learn">Learn</a>
+                <a href="/board">Board</a>
+                <a href="/puzzles">Puzzles</a>
+                <a href="#cp5">About</a>
+                <a href="#cp4" class="nav-cta">Get Started</a>
+            </nav>
         </header>
 
         <main class="game-area">
             <div id="evaluation-bar-container">
                 <div id="evaluation-bar"></div>
+                <span id="evaluation-score"></span>
             </div>
             <div id="board-wrapper">
                 <div id="board"></div>
@@ -43,23 +69,29 @@
                 <button id="play-bot-btn" class="skeleton"><span class="material-icons">play_arrow</span>Play</button>
             </div>
 
-            <div class="control-card actions-card">
-                <button id="flip-board-btn" class="skeleton"><span class="material-icons">swap_horiz</span>Flip Board</button>
+            <div class="control-card actions-card" style="flex-direction: row;">
+                <button id="flip-board-btn" class="skeleton"><span class="material-icons">swap_horiz</span>Flip
+                    Board</button>
                 <button id="share-btn" class="skeleton"><span class="material-icons">share</span>Share</button>
+                <div class="move-navigation">
+                    <button id="prev-move-btn" disabled><span class="material-icons">arrow_back</span></button>
+                    <button id="next-move-btn" disabled><span class="material-icons">arrow_forward</span></button>
+                </div>
             </div>
-            
+
             <div class="control-card">
                 <div class="control-group fen-group">
                     <label for="fen-input">FEN String</label>
-                    <input type="text" id="fen-input" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
+                    <input type="text" id="fen-input"
+                        placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
                 </div>
             </div>
 
             <div class="control-card" id="engine-setup-card">
                 <div id="engine-controls" class="control-group">
                     <div class="setup-item">
-                        <label for="elo-slider">ELO Strength: <span id="elo-value">2000</span></label>
-                        <input type="range" id="elo-slider" min="1350" max="2750" value="2000" step="50">
+                        <label for="elo-slider">ELO Strength: <span id="elo-value">2750</span></label>
+                        <input type="range" id="elo-slider" min="1350" max="2750" value="2750" step="50">
                     </div>
                 </div>
             </div>
@@ -70,17 +102,25 @@
         <div class="footer-content">
             <div class="footer-section about">
                 <h2>About Chess Compiler & Compy</h2>
-                <p>Chess Compiler is a modern chess interface designed for both casual players and enthusiasts. Our powerful AI bot, "Compy", is powered by Stockfish, one of the world's strongest chess engines. Challenge Compy at various ELO strengths, analyze your games, and improve your skills.</p>
+                <p>Chess Compiler is a modern chess interface designed for both casual players and enthusiasts. Our
+                    powerful AI bot, "Compy", is powered by Stockfish, one of the world's strongest chess engines.
+                    Challenge Compy at various ELO strengths, analyze your games, and improve your skills.</p>
             </div>
             <div class="footer-section features">
                 <h2>Features</h2>
                 <ul>
-                    <li><strong>Play vs. AI:</strong> Challenge our Stockfish-based bot, Compy, with adjustable ELO strength (1350 to 2750).</li>
-                    <li><strong>Real-time Evaluation:</strong> A dynamic evaluation bar shows you the state of the game in real-time.</li>
-                    <li><strong>FEN Support:</strong> Load any chess position using a FEN string to analyze or play from that point.</li>
-                    <li><strong>Share Positions:</strong> Easily share a link to the current board position with friends or for analysis.</li>
-                    <li><strong>Modern Interface:</strong> A clean, responsive, and intuitive user interface to focus on your game.</li>
-                    <li><strong>Flip Board:</strong> View the board from either White's or Black's perspective at any time.</li>
+                    <li><strong>Play vs. AI:</strong> Challenge our Stockfish-based bot, Compy, with adjustable ELO
+                        strength (1350 to 2750).</li>
+                    <li><strong>Real-time Evaluation:</strong> A dynamic evaluation bar shows you the state of the game
+                        in real-time.</li>
+                    <li><strong>FEN Support:</strong> Load any chess position using a FEN string to analyze or play from
+                        that point.</li>
+                    <li><strong>Share Positions:</strong> Easily share a link to the current board position with friends
+                        or for analysis.</li>
+                    <li><strong>Modern Interface:</strong> A clean, responsive, and intuitive user interface to focus on
+                        your game.</li>
+                    <li><strong>Flip Board:</strong> View the board from either White's or Black's perspective at any
+                        time.</li>
                     <li><strong>Offline Support:</strong> Play even when you're not connected to the internet.</li>
                 </ul>
             </div>
@@ -92,6 +132,7 @@
 
     <div id="game-over-modal" class="modal-overlay hidden">
         <div class="modal-content">
+            <button id="close-modal-btn" class="close-btn">&times;</button>
             <h2 id="game-over-message"></h2>
             <button id="play-again-btn"><span class="material-icons">replay</span>Play Again</button>
         </div>
@@ -119,4 +160,5 @@
         }
     </script>
 </body>
+
 </html>
