@@ -524,6 +524,45 @@ header h1 {
     font-family: 'Poppins', sans-serif;
 }
 
+#pgn-input {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 5px;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    resize: vertical;
+    min-height: 80px;
+}
+
+#analyze-pgn-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    background: var(--glass-bg);
+    color: var(--text-main);
+    cursor: pointer;
+    border-radius: 15px;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    width: 100%;
+}
+
+#analyze-pgn-btn:hover {
+    background: var(--accent-color);
+    border-color: var(--purple1);
+    box-shadow: 0 0 15px var(--accent-color);
+    color: #fff;
+}
+
 #elo-controls {
     gap: 15px;
 }
@@ -632,6 +671,68 @@ header h1 {
     width: 90%;
     max-width: 400px;
 }
+
+.analysis-modal-content {
+    max-width: 600px;
+    text-align: left;
+}
+
+#analysis-results {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 15px;
+}
+
+#analysis-results h2 {
+    text-align: center;
+}
+
+.analysis-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.accuracy-score {
+    text-align: center;
+}
+
+.accuracy-score .score {
+    font-size: 2em;
+    font-weight: 600;
+}
+
+.move-analysis-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.move-number {
+    width: 40px;
+    color: var(--text-muted);
+}
+
+.move-notation {
+    flex-grow: 1;
+    font-weight: 600;
+}
+
+.move-classification-icon {
+    width: 30px;
+    height: 30px;
+    margin: 0 10px;
+}
+
+.move-classification-text {
+    width: 80px;
+    font-size: 0.9em;
+}
+
 
 .modal-content h2 {
     margin-top: 0;

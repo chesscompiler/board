@@ -22,6 +22,11 @@ const botAvatar = document.getElementById('bot-avatar');
 const prevMoveBtn = document.getElementById('prev-move-btn');
 const nextMoveBtn = document.getElementById('next-move-btn');
 const closeModalBtn = document.getElementById('close-modal-btn');
+const pgnInput = document.getElementById('pgn-input');
+const analyzePgnBtn = document.getElementById('analyze-pgn-btn');
+const analysisModal = document.getElementById('analysis-modal');
+const analysisResults = document.getElementById('analysis-results');
+const closeAnalysisModalBtn = document.getElementById('close-analysis-modal-btn');
 
 
 const pieceImages = {
@@ -49,6 +54,7 @@ let lastEvaluation = 0;
 let isBoardFlipped = false;
 let playerColor = WHITE;
 let isGameActive = false;
+let isAnalyzing = false; // Flag to control engine access
 let isEvaluatingOnly = false;
 let gameHistory = [];
 let currentMoveIndex = -1;
@@ -432,6 +438,11 @@ stockfish.onmessage = (event) => {
     const message = event.data;
     //console.log(message);
 
+    // If an analysis is running, ignore messages to prevent conflicts.
+    if (isAnalyzing) {
+        return;
+    }
+
     if (message === 'uciok') {
         stockfish.postMessage('isready');
     }
@@ -796,6 +807,188 @@ gameOverModal.addEventListener('click', (e) => {
         closeModal(gameOverModal);
     }
 });
+
+closeAnalysisModalBtn.addEventListener('click', () => closeModal(analysisModal));
+
+analysisModal.addEventListener('click', (e) => {
+    if (e.target === analysisModal) {
+        closeModal(analysisModal);
+    }
+});
+
+async function analyzePgn() {
+    if (isGameActive) {
+        alert("Please stop the current game before starting an analysis.");
+        return;
+    }
+    const pgn = pgnInput.value.trim();
+    if (!pgn) {
+        updateStatus('Please paste a PGN to analyze.');
+        return;
+    }
+
+    const tempChess = new Chess();
+    try {
+        tempChess.loadPgn(pgn, { sloppy: true });
+    } catch (e) {
+        updateStatus('Invalid PGN string.');
+        console.error("PGN Parsing Error:", e);
+        return;
+    }
+
+    const moves = tempChess.history({ verbose: true });
+    
+    analysisModal.classList.remove('hidden');
+    analysisResults.innerHTML = `<h2>Analyzing...</h2><p>Found ${moves.length} moves. This may take a moment.</p>`;
+
+    try {
+        isAnalyzing = true; // Set a flag to block other engine commands
+        const analysisData = await runFullAnalysis(moves);
+        renderAnalysisReport(analysisData);
+    } catch(err) {
+        console.error("Analysis failed:", err);
+        analysisResults.innerHTML = `<h2>Analysis Failed</h2><p>Something went wrong during the analysis. Please check the console for details.</p>`;
+    } finally {
+        isAnalyzing = false; // Release the lock
+    }
+}
+
+function getEngineMove(fen) {
+    return new Promise((resolve) => {
+        let bestMove = null;
+        let evaluation = null;
+
+        const onMessage = (event) => {
+            const message = event.data;
+            if (message.startsWith('info') && message.includes('score cp')) {
+                const match = message.match(/score cp (-?\d+)/);
+                if (match) {
+                    evaluation = parseInt(match[1]);
+                }
+            } else if (message.startsWith('info') && message.includes('score mate')) {
+                const match = message.match(/score mate (-?\d+)/);
+                if (match) {
+                    const mateIn = parseInt(match[1]);
+                    evaluation = (mateIn > 0 ? 1 : -1) * (20000 - Math.abs(mateIn));
+                }
+            } else if (message.startsWith('bestmove')) {
+                bestMove = message.split(' ')[1];
+                stockfish.removeEventListener('message', onMessage);
+                resolve({ evaluation, bestMove });
+            }
+        };
+        stockfish.addEventListener('message', onMessage);
+        stockfish.postMessage('stop');
+        stockfish.postMessage(`position fen ${fen}`);
+        stockfish.postMessage('go depth 15');
+    });
+}
+
+async function runFullAnalysis(moves) {
+    let playerAccuracy = { w: { total: 0, count: 0 }, b: { total: 0, count: 0 } };
+    const analysisResults = [];
+    const game = new Chess();
+
+    for (let i = 0; i < moves.length; i++) {
+        const move = moves[i];
+        const player = move.color;
+        const prevFen = game.fen();
+        
+        // Get engine eval for the position BEFORE the user's move
+        const engineAnalysisBefore = await getEngineMove(prevFen);
+        const engineEvalBefore = engineAnalysisBefore.evaluation;
+        const bestMove = engineAnalysisBefore.bestMove;
+
+        // Make the user's move and get the eval AFTER
+        game.move(move.san);
+        const userMoveFen = game.fen();
+        const engineAnalysisAfter = await getEngineMove(userMoveFen);
+        const userMoveEval = engineAnalysisAfter.evaluation;
+        
+        const evalLoss = (engineEvalBefore - userMoveEval) * (player === 'w' ? 1 : -1);
+        const accuracy = 100 * Math.exp(-0.004 * evalLoss);
+        
+        playerAccuracy[player].total += accuracy;
+        playerAccuracy[player].count++;
+
+        analysisResults.push({
+            move: move,
+            fen: userMoveFen,
+            accuracy: accuracy,
+            evalLoss: evalLoss,
+            bestMove: bestMove
+        });
+        
+        // Update progress
+        analysisResults.innerHTML = `<h2>Analyzing...</h2><p>Move ${i + 1} of ${moves.length} analyzed.</p>`;
+    }
+
+    return {
+        results: analysisResults,
+        accuracy: {
+            w: playerAccuracy.w.count > 0 ? playerAccuracy.w.total / playerAccuracy.w.count : 100,
+            b: playerAccuracy.b.count > 0 ? playerAccuracy.b.total / playerAccuracy.b.count : 100
+        }
+    };
+}
+
+function classifyMove(evalLoss) {
+    if (evalLoss <= 10) return { text: "Best", icon: "⭐" };
+    if (evalLoss <= 25) return { text: "Excellent", icon: "👍" };
+    if (evalLoss <= 50) return { text: "Good", icon: "✔️" };
+    if (evalLoss <= 100) return { text: "Inaccuracy", icon: " ?! " };
+    if (evalLoss <= 200) return { text: "Mistake", icon: "?" };
+    return { text: "Blunder", icon: "??", san: "" };
+}
+
+function renderAnalysisReport(analysisData) {
+    let reportHtml = `
+        <div class="analysis-summary">
+            <div class="accuracy-score">
+                White Accuracy
+                <div class="score">${analysisData.accuracy.w.toFixed(1)}</div>
+            </div>
+            <h2>Game Report</h2>
+            <div class="accuracy-score">
+                Black Accuracy
+                <div class="score">${analysisData.accuracy.b.toFixed(1)}</div>
+            </div>
+        </div>
+    `;
+
+    analysisData.results.forEach((result, index) => {
+        const moveNumber = Math.floor(index / 2) + 1;
+        const turnIndicator = index % 2 === 0 ? '.' : '...';
+        const classification = classifyMove(result.evalLoss);
+
+        reportHtml += `
+            <div class="move-analysis-item" data-fen="${result.fen}">
+                <div class="move-number">${moveNumber}${turnIndicator}</div>
+                <div class="move-notation">${result.move.san}</div>
+                <div class="move-classification-icon">${classification.icon}</div>
+                <div class="move-classification-text">${classification.text}</div>
+            </div>
+        `;
+    });
+
+    analysisResults.innerHTML = reportHtml;
+
+    document.querySelectorAll('.move-analysis-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const fen = item.dataset.fen;
+            if (fen) {
+                isGameActive = false; // Ensure we are not in "play" mode
+                chess.load(fen);
+                renderBoard();
+                updateStatus('Position loaded from analysis.');
+                closeModal(analysisModal);
+            }
+        });
+    });
+}
+
+analyzePgnBtn.addEventListener('click', analyzePgn);
+
 
 function removeSkeletons() {
     document.querySelectorAll('.skeleton').forEach(el => {

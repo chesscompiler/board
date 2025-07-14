@@ -87,6 +87,14 @@
                 </div>
             </div>
 
+            <div class="control-card" id="pgn-card" style="display: none;">
+                <div class="control-group">
+                    <label for="pgn-input">PGN</label>
+                    <textarea id="pgn-input" placeholder="Paste PGN here to analyze..." rows="4"></textarea>
+                    <button id="analyze-pgn-btn"><span class="material-icons">analytics</span> Analyze</button>
+                </div>
+            </div>
+
             <div class="control-card" id="engine-setup-card">
                 <div id="engine-controls" class="control-group">
                     <div class="setup-item">
@@ -135,6 +143,15 @@
             <button id="close-modal-btn" class="close-btn">&times;</button>
             <h2 id="game-over-message"></h2>
             <button id="play-again-btn"><span class="material-icons">replay</span>Play Again</button>
+        </div>
+    </div>
+
+    <div id="analysis-modal" class="modal-overlay hidden">
+        <div class="modal-content analysis-modal-content">
+            <button id="close-analysis-modal-btn" class="close-btn">&times;</button>
+            <div id="analysis-results">
+                <!-- Analysis content will be injected here -->
+            </div>
         </div>
     </div>
 
