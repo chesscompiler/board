@@ -1,5 +1,4 @@
 import { Chess, WHITE, BLACK, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING } from './chess.js';
-import { encodeFenForUrl, decodeFenFromUrl } from './urlShortner.js';
 
 const stockfish = new Worker('engine/stockfish-17-lite-single.js');
 const boardElement = document.getElementById('board');
@@ -59,85 +58,6 @@ let isAnalyzing = false; // Flag to control engine access
 let isEvaluatingOnly = false;
 let gameHistory = [];
 let currentMoveIndex = -1;
-let isTouchDragging = false;
-let touchDragPiece = null;
-let touchDragGhost = null;
-let touchDragStart = null;
-
-// Touch drag logic for mobile
-boardElement.addEventListener('touchstart', (e) => {
-    // Only activate if the touch is on a piece
-    const touch = e.touches[0];
-    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (target && target.classList.contains('piece')) {
-        e.preventDefault();
-        isTouchDragging = true;
-        touchDragPiece = target;
-        const parentSquare = target.parentElement;
-        touchDragStart = {
-            fromRow: parseInt(parentSquare.dataset.row),
-            fromCol: parseInt(parentSquare.dataset.col)
-        };
-        // Create ghost piece
-        touchDragGhost = target.cloneNode(true);
-        touchDragGhost.style.position = 'fixed';
-        touchDragGhost.style.pointerEvents = 'none';
-        touchDragGhost.style.zIndex = '9999';
-        touchDragGhost.style.left = (touch.clientX - target.offsetWidth / 2) + 'px';
-        touchDragGhost.style.top = (touch.clientY - target.offsetHeight / 2) + 'px';
-        touchDragGhost.style.width = target.offsetWidth + 'px';
-        touchDragGhost.style.height = target.offsetHeight + 'px';
-        touchDragGhost.classList.add('dragging');
-        document.body.appendChild(touchDragGhost);
-    }
-}, { passive: false });
-
-boardElement.addEventListener('touchmove', (e) => {
-    if (isTouchDragging && touchDragGhost && e.touches.length === 1) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        touchDragGhost.style.left = (touch.clientX - touchDragGhost.offsetWidth / 2) + 'px';
-        touchDragGhost.style.top = (touch.clientY - touchDragGhost.offsetHeight / 2) + 'px';
-    }
-}, { passive: false });
-
-function getSquareFromPoint(x, y) {
-    const el = document.elementFromPoint(x, y);
-    if (el && el.classList.contains('square')) {
-        return el;
-    }
-    return null;
-}
-
-function handleTouchDrop(toSquare) {
-    if (!touchDragStart || !toSquare) return;
-    const toRow = parseInt(toSquare.dataset.row);
-    const toCol = parseInt(toSquare.dataset.col);
-    movePiece(touchDragStart.fromRow, touchDragStart.fromCol, toRow, toCol);
-}
-
-boardElement.addEventListener('touchend', (e) => {
-    if (isTouchDragging && touchDragGhost) {
-        const touch = e.changedTouches[0];
-        const toSquare = getSquareFromPoint(touch.clientX, touch.clientY);
-        handleTouchDrop(toSquare);
-        document.body.removeChild(touchDragGhost);
-        touchDragGhost = null;
-        touchDragPiece = null;
-        touchDragStart = null;
-        isTouchDragging = false;
-    }
-});
-
-boardElement.addEventListener('touchcancel', () => {
-    if (touchDragGhost) {
-        document.body.removeChild(touchDragGhost);
-    }
-    touchDragGhost = null;
-    touchDragPiece = null;
-    touchDragStart = null;
-    isTouchDragging = false;
-});
 
 function navigateHistory(direction) {
     if (!isGameActive) return;
@@ -627,9 +547,14 @@ function checkGameOver() {
     }
 }
 
-// Instead, use the functions from urlShortner.js
+const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+const FEN_PIECE_MAP = {
+    'p': 1, 'n': 2, 'b': 3, 'r': 4, 'q': 5, 'k': 6,
+    'P': 7, 'N': 8, 'B': 9, 'R': 10, 'Q': 11, 'K': 12
+};
+const FEN_PIECE_MAP_REV = Object.fromEntries(Object.entries(FEN_PIECE_MAP).map(a => a.reverse()));
 
-function encodeFenForUrlold(fen) {
+function encodeFenForUrl(fen) {
     const [placement, turn, castling, enpassant, halfmove, fullmove] = fen.split(' ');
 
     let binaryString = '';
@@ -684,7 +609,7 @@ function encodeFenForUrlold(fen) {
     return encoded;
 }
 
-function decodeFenFromUrlold(encoded) {
+function decodeFenFromUrl(encoded) {
     let binaryString = '';
     for (const char of encoded) {
         const index = BASE64_CHARS.indexOf(char);
