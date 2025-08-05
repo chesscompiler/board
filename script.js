@@ -1,4 +1,5 @@
 import { Chess, WHITE, BLACK, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING } from './chess.js';
+import { encodeFenForUrl, decodeFenFromUrl } from '../urlshortener.js'
 
 const stockfish = new Worker('engine/stockfish-17-lite-single.js');
 const boardElement = document.getElementById('board');
@@ -554,7 +555,7 @@ const FEN_PIECE_MAP = {
 };
 const FEN_PIECE_MAP_REV = Object.fromEntries(Object.entries(FEN_PIECE_MAP).map(a => a.reverse()));
 
-function encodeFenForUrl(fen) {
+function encodeFenForUrlold(fen) {
     const [placement, turn, castling, enpassant, halfmove, fullmove] = fen.split(' ');
 
     let binaryString = '';
@@ -609,7 +610,7 @@ function encodeFenForUrl(fen) {
     return encoded;
 }
 
-function decodeFenFromUrl(encoded) {
+function decodeFenFromUrlold(encoded) {
     let binaryString = '';
     for (const char of encoded) {
         const index = BASE64_CHARS.indexOf(char);
