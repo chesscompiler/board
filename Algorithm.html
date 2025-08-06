@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultra-Advanced Chess FEN Compression</title>
+<!-- Tailwind CSS must be loaded BEFORE it is configured -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  // Configure Tailwind CSS after it has been loaded
+  tailwind.config = {
+    darkMode: 'media',
+  }
+</script>
+<style>
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+</style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+
+<div class="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+  <div class="text-center mb-8">
+    <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-50">Ultra-Advanced FEN Compression</h1>
+    <p class="mt-2 text-base text-gray-600 dark:text-gray-400">Multi-layer compression with adaptive algorithms, bitwise optimization, and intelligent delta encoding.</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg space-y-6">
+    <div>
+      <label for="fenInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">FEN Input:</label>
+      <textarea id="fenInput" rows="3" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400">rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1</textarea>
+    </div>
+
+    <div class="flex flex-col sm:flex-row justify-center gap-4">
+      <button id="compressBtn" class="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105 active:scale-100">Compress</button>
+      <button id="decompressBtn" class="w-full sm:w-auto px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-transform transform hover:scale-105 active:scale-100">Decompress</button>
+      <button id="benchmarkBtn" class="w-full sm:w-auto px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-transform transform hover:scale-105 active:scale-100">Benchmark</button>
+    </div>
+
+    <div>
+      <label for="output" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Output:</label>
+      <textarea id="output" rows="5" readonly class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 shadow-sm font-mono text-sm text-gray-900 dark:text-gray-100" placeholder="Compressed or Decompressed output will appear here..."></textarea>
+    </div>
+
+    <div id="stats" class="text-center font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg min-h-[60px] flex items-center justify-center">
+      Compression stats will be shown here.
+    </div>
+
+    <div id="algorithmDetails" class="hidden bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+      <h3 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">Algorithm Details:</h3>
+      <div id="algorithmInfo" class="text-sm text-blue-700 dark:text-blue-300"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// === CONSTANTS AND GLOBALS ===
+const PIECE_SYMBOLS = "PNBRQKpnbrqk";
+const START_FEN_PIECES = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+const EMPTY_FEN_PIECES = "8/8/8/8/8/8/8/8";
+
+// Common chess positions for pattern matching
+const COMMON_PATTERNS = [
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", // 0: Starting position
+    "rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R", // 1: Italian opening
+    "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R", // 2: Ruy Lopez
+    "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR", // 3: King's pawn
+    "8/8/8/8/8/8/8/8", // 4: Empty board
+];
+
+let START_BITBOARDS;
+let EMPTY_BITBOARDS;
+let COMMON_BITBOARDS = [];
+
+// === HELPER FUNCTIONS ===
+function countBits(n) {
+    let count = 0;
+    while (n > 0n) {
+        count += Number(n & 1n);
+        n >>= 1n;
+    }
+    return count;
+}
+
+// === DELTA ENCODING STRATEGY ===
+
+/**
+ * Compares the current board against multiple base states (start, empty, common patterns)
+ * and selects the one that produces the smallest delta (difference).
+ * This is the core of the adaptive compression.
+ * @param {object} currentBitboards - The bitboards for the FEN to compress.
+ * @returns {object} An object containing the best delta, the mode used, and its index.
+ */
+function calculateOptimalDelta(currentBitboards) {
+    let bestDelta = null;
+    let bestSize = Infinity;
+    let bestMode = "";
+    let bestModeIndex = -1;
+
+    const estimateBitboardSize = (bitboards) => {
+        let totalBits = 0;
+        for (const piece of PIECE_SYMBOLS) {
+            if (bitboards[piece] !== 0n) {
+                totalBits += countBits(bitboards[piece]) * 6; // Approximate bits per set bit
+            }
+        }
+        return totalBits;
+    };
+
+    // Strategy 1: Delta from starting position
+    const deltaFromStart = {};
+    for (const piece of PIECE_SYMBOLS) {
+        deltaFromStart[piece] = currentBitboards[piece] ^ START_BITBOARDS[piece];
+    }
+    const startSize = estimateBitboardSize(deltaFromStart);
+    if (startSize < bestSize) {
+        bestSize = startSize;
+        bestDelta = deltaFromStart;
+        bestMode = "Delta from Start";
+        bestModeIndex = 0;
+    }
+
+    // Strategy 2: Delta from empty board (same as raw bitboards)
+    const deltaFromEmpty = currentBitboards;
+    const emptySize = estimateBitboardSize(deltaFromEmpty);
+    if (emptySize < bestSize) {
+        bestSize = emptySize;
+        bestDelta = deltaFromEmpty;
+        bestMode = "Raw Bitboards";
+        bestModeIndex = 1;
+    }
+
+    // Strategy 3: Delta from common patterns
+    for (let i = 0; i < COMMON_BITBOARDS.length; i++) {
+        const deltaFromPattern = {};
+        for (const piece of PIECE_SYMBOLS) {
+            deltaFromPattern[piece] = currentBitboards[piece] ^ COMMON_BITBOARDS[i][piece];
+        }
+        const patternSize = estimateBitboardSize(deltaFromPattern);
+        if (patternSize < bestSize) {
+            bestSize = patternSize;
+            bestDelta = deltaFromPattern;
+            bestMode = `Delta from Pattern ${i}`;
+            bestModeIndex = 2 + i;
+        }
+    }
+
+    return { delta: bestDelta, mode: bestMode, size: bestSize, modeIndex: bestModeIndex };
+}
+
+
+// === CORE BITBOARD FUNCTIONS ===
+function fenToBitboards(fenPieces) {
+    const bitboards = {};
+    for (const p of PIECE_SYMBOLS) bitboards[p] = 0n;
+    const ranks = fenPieces.split('/');
+    for (let rank = 7; rank >= 0; rank--) {
+        let file = 0;
+        for (const char of ranks[7 - rank]) {
+            if (isNaN(parseInt(char))) {
+                try {
+                    bitboards[char] |= (1n << BigInt(rank * 8 + file));
+                } catch (e) {
+                    console.error(`Error processing FEN char '${char}' at rank ${rank}, file ${file}`);
+                    throw new Error("Invalid FEN character.");
+                }
+                file++;
+            } else {
+                file += parseInt(char);
+            }
+        }
+    }
+    return bitboards;
+}
+
+function bitboardsToFen(bitboards) {
+    let fen = '';
+    for (let rank = 7; rank >= 0; rank--) {
+        let empty = 0;
+        for (let file = 0; file < 8; file++) {
+            const squareIndex = BigInt(rank * 8 + file);
+            let piece = null;
+            for (const p of PIECE_SYMBOLS) {
+                if ((bitboards[p] & (1n << squareIndex)) !== 0n) {
+                    piece = p;
+                    break;
+                }
+            }
+            if (piece) {
+                if (empty > 0) { fen += empty; empty = 0; }
+                fen += piece;
+            } else {
+                empty++;
+            }
+        }
+        if (empty > 0) fen += empty;
+        if (rank > 0) fen += '/';
+    }
+    return fen;
+}
+
+// === ADVANCED BITBOARD ENCODING/DECODING ===
+function encodeBitboardAdvanced(bitboard) {
+    if (bitboard === 0n) return [];
+    
+    const positions = [];
+    for (let i = 0; i < 64; i++) {
+        if ((bitboard & (1n << BigInt(i))) !== 0n) {
+            positions.push(i);
+        }
+    }
+    
+    if (positions.length === 0) return [];
+    // Optimization: if only one piece, use a single byte with a flag
+    if (positions.length === 1) return [0x80 | positions[0]];
+    
+    // Use differential encoding for multiple pieces
+    const result = [positions.length]; // Start with the count of pieces
+    let prev = 0;
+    for (const pos of positions) {
+        const diff = pos - prev;
+        // Variable-length encoding for the difference
+        if (diff < 128) { // 7 bits
+            result.push(diff);
+        } else { // Larger difference needs two bytes
+            result.push(0x80 | (diff & 0x7F), diff >> 7);
+        }
+        prev = pos;
+    }
+    
+    return result;
+}
+
+function decodeBitboardAdvanced(data, offset) {
+    if (offset >= data.length) return { bitboard: 0n, newOffset: offset };
+    
+    let bitboard = 0n;
+    let ptr = offset;
+    
+    // Check for single-piece optimization
+    if (data[ptr] & 0x80) {
+        const pos = data[ptr] & 0x7F;
+        bitboard = 1n << BigInt(pos);
+        return { bitboard, newOffset: ptr + 1 };
+    }
+    
+    // Multi-piece decoding
+    const count = data[ptr++];
+    let currentPos = 0;
+    
+    for (let i = 0; i < count; i++) {
+        if (ptr >= data.length) throw new Error("Unexpected end of data in bitboard stream.");
+        let diff = data[ptr++];
+        if (diff & 0x80) { // Two-byte difference
+            if (ptr >= data.length) throw new Error("Unexpected end of data in bitboard stream.");
+            diff = (diff & 0x7F) | (data[ptr++] << 7);
+        }
+        currentPos += diff;
+        bitboard |= (1n << BigInt(currentPos));
+    }
+    
+    return { bitboard, newOffset: ptr };
+}
+
+// === ULTRA COMPRESSION SYSTEM ===
+function ultraCompress(fenString) {
+    if (!fenString || typeof fenString !== 'string') throw new Error("Invalid FEN string provided.");
+    const parts = fenString.split(' ');
+    if (parts.length !== 6) throw new Error("FEN string must have 6 parts.");
+    const [fenPieces, activeColor, castling, enPassant, halfmove, fullmove] = parts;
+
+    // 1. Direct Pattern Matching (fastest path)
+    const patternIndex = COMMON_PATTERNS.indexOf(fenPieces);
+    if (patternIndex !== -1) {
+        // This position is a known common pattern. We can compress it very efficiently.
+        let metadataBytes = [];
+        let flags = 0;
+        if (activeColor === 'w') flags |= 0x80;
+        if (castling.includes('K')) flags |= 0x40;
+        if (castling.includes('Q')) flags |= 0x20;
+        if (castling.includes('k')) flags |= 0x10;
+        if (castling.includes('q')) flags |= 0x08;
+        
+        if (enPassant !== '-') {
+            flags |= 0x04;
+            const file = enPassant.charCodeAt(0) - 'a'.charCodeAt(0);
+            const rank = parseInt(enPassant[1]) - 1;
+            metadataBytes.push(rank * 8 + file);
+        }
+        
+        metadataBytes.push(parseInt(halfmove), parseInt(fullmove));
+        
+        const finalData = [0xFF, patternIndex, flags, ...metadataBytes];
+        return { 
+            compressed: base64Encode(new Uint8Array(finalData)), 
+            mode: `Pattern Match #${patternIndex}`,
+            algorithm: "Direct Pattern Reference",
+            layers: ["Pattern Matching", "Base64"]
+        };
+    }
+
+    // 2. Full Compression Pipeline for unknown positions
+    // Encode metadata with advanced packing
+    let metadataBytes = [];
+    let flags = 0;
+    if (activeColor === 'w') flags |= 0x80;
+    if (castling.includes('K')) flags |= 0x40;
+    if (castling.includes('Q')) flags |= 0x20;
+    if (castling.includes('k')) flags |= 0x10;
+    if (castling.includes('q')) flags |= 0x08;
+    
+    if (enPassant !== '-') {
+        flags |= 0x04;
+        const file = enPassant.charCodeAt(0) - 'a'.charCodeAt(0);
+        const rank = parseInt(enPassant[1]) - 1;
+        metadataBytes.push(rank * 8 + file);
+    }
+    
+    metadataBytes.push(parseInt(halfmove), parseInt(fullmove));
+
+    // Get optimal delta encoding
+    const currentBitboards = fenToBitboards(fenPieces);
+    const { delta, mode, modeIndex } = calculateOptimalDelta(currentBitboards);
+
+    // Encode the delta bitboards
+    let boardData = [];
+    for (let i = 0; i < PIECE_SYMBOLS.length; i++) {
+        const piece = PIECE_SYMBOLS[i];
+        const encodedBoard = encodeBitboardAdvanced(delta[piece]);
+        if (encodedBoard.length > 0) {
+            boardData.push(i); // Piece type
+            boardData.push(encodedBoard.length); // Length of data for this piece
+            boardData.push(...encodedBoard);
+        }
+    }
+
+    // Assemble the data packet: [header, flags, delta_mode, metadata..., board_data_len, board_data...]
+    const rawData = [flags, modeIndex, ...metadataBytes, boardData.length, ...boardData];
+    
+    // Apply Run-Length Encoding (RLE)
+    const rleCompressed = advancedRLE(new Uint8Array(rawData));
+    
+    // Final packet with 0xFE header for "fully compressed"
+    const finalData = [0xFE, ...rleCompressed];
+
+    // Convert to optimized base64
+    const result = base64Encode(new Uint8Array(finalData));
+    return { 
+        compressed: result, 
+        mode: mode,
+        algorithm: "Multi-Layer Compression",
+        layers: ["Delta Encoding", "Advanced RLE", "Base64"]
+    };
+}
+
+function ultraDecompress(compressedStr) {
+    if (!compressedStr || typeof compressedStr !== 'string') throw new Error("Invalid compressed string provided.");
+    
+    const data = Array.from(base64Decode(compressedStr));
+    let ptr = 0;
+    
+    const compressionType = data[ptr++];
+    
+    // Path 1: Decompressing a known pattern
+    if (compressionType === 0xFF) {
+        const patternIndex = data[ptr++];
+        if (patternIndex < 0 || patternIndex >= COMMON_PATTERNS.length) {
+            throw new Error(`Invalid pattern index ${patternIndex} found in data.`);
+        }
+        const flags = data[ptr++];
+        
+        let enPassant = '-';
+        if (flags & 0x04) {
+            const enPassantIndex = data[ptr++];
+            enPassant = String.fromCharCode('a'.charCodeAt(0) + (enPassantIndex % 8)) + (Math.floor(enPassantIndex / 8) + 1);
+        }
+        
+        const halfmove = data[ptr++];
+        const fullmove = data[ptr++];
+        
+        const activeColor = (flags & 0x80) ? 'w' : 'b';
+        let castling = ((flags & 0x40) ? 'K' : '') + ((flags & 0x20) ? 'Q' : '') + ((flags & 0x10) ? 'k' : '') + ((flags & 0x08) ? 'q' : '') || '-';
+        
+        return [COMMON_PATTERNS[patternIndex], activeColor, castling, enPassant, halfmove.toString(), fullmove.toString()].join(' ');
+    }
+    
+    if (compressionType !== 0xFE) {
+        throw new Error("Unknown compression format header.");
+    }
+
+    // Path 2: Full decompression pipeline
+    const compressedData = new Uint8Array(data.slice(1));
+    const rleDecompressed = advancedRLEDecompress(compressedData);
+    
+    const rawData = Array.from(rleDecompressed);
+    ptr = 0;
+    
+    const flags = rawData[ptr++];
+    // *** FIX: Read the delta mode index to know which base state to use ***
+    const deltaModeIndex = rawData[ptr++];
+    
+    let enPassant = '-';
+    if (flags & 0x04) {
+        const enPassantIndex = rawData[ptr++];
+        enPassant = String.fromCharCode('a'.charCodeAt(0) + (enPassantIndex % 8)) + (Math.floor(enPassantIndex / 8) + 1);
+    }
+    
+    const halfmove = rawData[ptr++];
+    const fullmove = rawData[ptr++];
+    
+    const boardDataLength = rawData[ptr++];
+    const boardData = rawData.slice(ptr, ptr + boardDataLength);
+    
+    // Decode bitboards from the data stream
+    const deltaBitboards = {};
+    for (const p of PIECE_SYMBOLS) deltaBitboards[p] = 0n;
+    
+    let boardPtr = 0;
+    while (boardPtr < boardData.length) {
+        const pieceIndex = boardData[boardPtr++];
+        const dataLength = boardData[boardPtr++];
+        const pieceData = boardData.slice(boardPtr, boardPtr + dataLength);
+        boardPtr += dataLength;
+        
+        const { bitboard } = decodeBitboardAdvanced(pieceData, 0);
+        deltaBitboards[PIECE_SYMBOLS[pieceIndex]] = bitboard;
+    }
+    
+    // *** FIX: Reconstruct original bitboards using the correct base state ***
+    let baseBitboards;
+    if (deltaModeIndex === 0) {
+        baseBitboards = START_BITBOARDS;
+    } else if (deltaModeIndex === 1) {
+        baseBitboards = EMPTY_BITBOARDS;
+    } else {
+        const patternIndex = deltaModeIndex - 2;
+        if (patternIndex < 0 || patternIndex >= COMMON_BITBOARDS.length) {
+            throw new Error("Invalid delta pattern index found in data.");
+        }
+        baseBitboards = COMMON_BITBOARDS[patternIndex];
+    }
+    
+    const originalBitboards = {};
+    for (const piece of PIECE_SYMBOLS) {
+        originalBitboards[piece] = deltaBitboards[piece] ^ baseBitboards[piece];
+    }
+    
+    const fenPieces = bitboardsToFen(originalBitboards);
+    const activeColor = (flags & 0x80) ? 'w' : 'b';
+    let castling = ((flags & 0x40) ? 'K' : '') + ((flags & 0x20) ? 'Q' : '') + ((flags & 0x10) ? 'k' : '') + ((flags & 0x08) ? 'q' : '') || '-';
+    
+    return [fenPieces, activeColor, castling, enPassant, halfmove.toString(), fullmove.toString()].join(' ');
+}
+
+// === ADVANCED RLE ===
+function advancedRLE(data) {
+    const result = [];
+    for (let i = 0; i < data.length; ) {
+        const byte = data[i];
+        let count = 1;
+        
+        while (i + count < data.length && data[i + count] === byte && count < 255) {
+            count++;
+        }
+        
+        // Use RLE for sequences of 4 or more, or 3 or more if the byte is 0
+        if (count >= 4 || (count >= 3 && byte === 0)) {
+            result.push(0xFF, byte, count); // RLE marker, byte, count
+            i += count;
+        } else {
+            // If the byte is the RLE marker, escape it
+            if (byte === 0xFF) {
+                result.push(0xFF, 0xFF, 1);
+            } else {
+                result.push(byte);
+            }
+            i++;
+        }
+    }
+    return new Uint8Array(result);
+}
+
+function advancedRLEDecompress(data) {
+    const result = [];
+    for (let i = 0; i < data.length; i++) {
+        if (data[i] === 0xFF && i + 2 < data.length) {
+            const byte = data[i + 1];
+            const count = data[i + 2];
+            for (let j = 0; j < count; j++) {
+                result.push(byte);
+            }
+            i += 2;
+        } else {
+            result.push(data[i]);
+        }
+    }
+    return new Uint8Array(result);
+}
+
+// === OPTIMIZED BASE64 ===
+const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"; // URL-safe
+const BASE64_MAP = new Map();
+for (let i = 0; i < BASE64_CHARS.length; i++) {
+    BASE64_MAP.set(BASE64_CHARS[i], i);
+}
+
+function base64Encode(data) {
+    let result = '';
+    let i = 0;
+    for (i = 0; i + 2 < data.length; i += 3) {
+        const a = data[i];
+        const b = data[i + 1];
+        const c = data[i + 2];
+        const bitmap = (a << 16) | (b << 8) | c;
+        result += BASE64_CHARS[(bitmap >> 18) & 63] + BASE64_CHARS[(bitmap >> 12) & 63] + BASE64_CHARS[(bitmap >> 6) & 63] + BASE64_CHARS[bitmap & 63];
+    }
+    // Handle padding
+    if (i < data.length) {
+        const a = data[i];
+        const b = (i + 1 < data.length) ? data[i + 1] : 0;
+        const bitmap = (a << 16) | (b << 8);
+        result += BASE64_CHARS[(bitmap >> 18) & 63] + BASE64_CHARS[(bitmap >> 12) & 63];
+        if (i + 1 < data.length) {
+            result += BASE64_CHARS[(bitmap >> 6) & 63];
+        }
+    }
+    return result;
+}
+
+function base64Decode(str) {
+    const result = [];
+    let i = 0;
+    for (i = 0; i + 3 < str.length; i += 4) {
+        const a = BASE64_MAP.get(str[i]) || 0;
+        const b = BASE64_MAP.get(str[i + 1]) || 0;
+        const c = BASE64_MAP.get(str[i + 2]) || 0;
+        const d = BASE64_MAP.get(str[i + 3]) || 0;
+        const bitmap = (a << 18) | (b << 12) | (c << 6) | d;
+        result.push((bitmap >> 16) & 255, (bitmap >> 8) & 255, bitmap & 255);
+    }
+    // Handle remaining chars
+    if (i < str.length) {
+        const a = BASE64_MAP.get(str[i]) || 0;
+        const b = BASE64_MAP.get(str[i + 1]) || 0;
+        const bitmap = (a << 18) | (b << 12);
+        result.push((bitmap >> 16) & 255);
+        if (i + 2 < str.length) {
+            const c = BASE64_MAP.get(str[i + 2]) || 0;
+            const fullBitmap = bitmap | (c << 6);
+            result.push((fullBitmap >> 8) & 255);
+        }
+    }
+    return new Uint8Array(result);
+}
+
+
+// === BENCHMARK SUITE ===
+const BENCHMARK_POSITIONS = [
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 4 3", // Italian Game
+    "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", // Complex middlegame
+    "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", // Endgame
+    "8/8/8/8/8/8/8/8 w - - 0 1", // Empty board
+    "r1b2rk1/pp3ppp/1q2p3/2npP3/3N1P2/2P5/PP2B1PP/R2Q1RK1 b - - 0 15", // Another middlegame
+];
+
+function runBenchmark() {
+    const results = [];
+    let totalOriginal = 0;
+    let totalCompressed = 0;
+    
+    for (const fen of BENCHMARK_POSITIONS) {
+        const originalSize = new Blob([fen]).size;
+        const { compressed, mode, algorithm } = ultraCompress(fen);
+        const compressedSize = new Blob([compressed]).size;
+        const ratio = ((1 - (compressedSize / originalSize)) * 100);
+        
+        let verified = false;
+        try {
+            const decompressed = ultraDecompress(compressed);
+            verified = decompressed === fen;
+        } catch (e) {
+            console.error("Benchmark verification failed for FEN:", fen, e);
+            verified = false;
+        }
+        
+        results.push({
+            position: fen.split(' ')[0].substring(0, 20) + '...',
+            original: originalSize,
+            compressed: compressedSize,
+            ratio: ratio,
+            mode: mode,
+            algorithm: algorithm,
+            verified: verified
+        });
+        
+        totalOriginal += originalSize;
+        totalCompressed += compressedSize;
+    }
+    
+    const overallRatio = ((1 - (totalCompressed / totalOriginal)) * 100);
+    return { results, overallRatio, totalOriginal, totalCompressed };
+}
+
+// === INITIALIZATION & DOM MANIPULATION ===
+window.onload = () => {
+    START_BITBOARDS = fenToBitboards(START_FEN_PIECES);
+    EMPTY_BITBOARDS = fenToBitboards(EMPTY_FEN_PIECES);
+    
+    for (const pattern of COMMON_PATTERNS) {
+        COMMON_BITBOARDS.push(fenToBitboards(pattern));
+    }
+
+    const fenInput = document.getElementById('fenInput');
+    const output = document.getElementById('output');
+    const stats = document.getElementById('stats');
+    const algorithmDetails = document.getElementById('algorithmDetails');
+    const algorithmInfo = document.getElementById('algorithmInfo');
+
+    const setStats = (text, type = 'info') => {
+        const baseClass = 'text-center font-medium p-4 rounded-lg min-h-[60px] flex items-center justify-center transition-colors';
+        if (type === 'info' && text === '') {
+            // Keep innerHTML for complex stats, just apply class
+        } else {
+            stats.innerHTML = `<div>${text}</div>`;
+        }
+
+        if (type === 'info') stats.className = `${baseClass} text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/50`;
+        if (type === 'success') stats.className = `${baseClass} text-green-800 dark:text-green-200 bg-green-100 dark:bg-green-500/20`;
+        if (type === 'error') stats.className = `${baseClass} text-red-800 dark:text-red-200 bg-red-100 dark:bg-red-500/20`;
+        if (type === 'warn') stats.className = `${baseClass} text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-500/20`;
+    };
+
+    const showAlgorithmDetails = (info) => {
+        algorithmInfo.innerHTML = info;
+        algorithmDetails.classList.remove('hidden');
+    };
+
+    const hideAlgorithmDetails = () => {
+        algorithmDetails.classList.add('hidden');
+    };
+
+    document.getElementById('compressBtn').addEventListener('click', () => {
+        try {
+            const originalFen = fenInput.value.trim();
+            if (!originalFen) {
+                setStats('Please enter a FEN string.', 'warn');
+                hideAlgorithmDetails();
+                return;
+            }
+            
+            const startTime = performance.now();
+            const { compressed, mode, algorithm, layers } = ultraCompress(originalFen);
+            const endTime = performance.now();
+            
+            output.value = compressed;
+
+            const originalSize = new Blob([originalFen]).size;
+            const compressedSize = new Blob([compressed]).size;
+            const ratio = ((1 - (compressedSize / originalSize)) * 100);
+            const ratioColor = ratio > 0 ? 'text-green-500' : 'text-red-500';
+            const compressionTime = (endTime - startTime).toFixed(2);
+
+            stats.innerHTML = `
+                <div class="space-y-1 text-sm sm:text-base">
+                    <div>Original: <strong>${originalSize}</strong> bytes | Compressed: <strong>${compressedSize}</strong> bytes</div>
+                    <div>Reduction: <strong class="${ratioColor}">${ratio.toFixed(1)}%</strong> | Time: <strong>${compressionTime}ms</strong></div>
+                </div>
+            `;
+            setStats('', 'info');
+
+            const algorithmDetailsText = `
+                <div class="space-y-2">
+                    <div><strong>Mode:</strong> ${mode}</div>
+                    <div><strong>Algorithm:</strong> ${algorithm}</div>
+                    <div><strong>Compression Layers Applied:</strong></div>
+                    <ul class="list-disc list-inside space-y-1 ml-4">
+                        ${layers.map(layer => `<li>${layer}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            showAlgorithmDetails(algorithmDetailsText);
+
+        } catch (e) {
+            console.error(e);
+            setStats(`Compression Error: ${e.message}`, 'error');
+            output.value = '';
+            hideAlgorithmDetails();
+        }
+    });
+
+    document.getElementById('decompressBtn').addEventListener('click', () => {
+        try {
+            const compressedData = output.value.trim(); // Decompress from output field
+            if (!compressedData) {
+                setStats('Please compress a FEN first, or paste compressed data into the output field.', 'warn');
+                hideAlgorithmDetails();
+                return;
+            }
+            
+            const startTime = performance.now();
+            const decompressed = ultraDecompress(compressedData);
+            const endTime = performance.now();
+            
+            fenInput.value = decompressed; // Put result back in input
+            const decompressionTime = (endTime - startTime).toFixed(2);
+            
+            setStats(`Decompression successful in ${decompressionTime}ms`, 'success');
+            hideAlgorithmDetails();
+        } catch (e) {
+            console.error(e);
+            setStats(`Decompression Error: ${e.message}`, 'error');
+            hideAlgorithmDetails();
+        }
+    });
+
+    document.getElementById('benchmarkBtn').addEventListener('click', () => {
+        try {
+            setStats('Running benchmark...', 'info');
+            hideAlgorithmDetails();
+            
+            setTimeout(() => {
+                const startTime = performance.now();
+                const { results, overallRatio, totalOriginal, totalCompressed } = runBenchmark();
+                const endTime = performance.now();
+                const benchmarkTime = (endTime - startTime).toFixed(2);
+                
+                const overallColor = overallRatio > 0 ? 'text-green-500' : 'text-red-500';
+                
+                stats.innerHTML = `
+                    <div class="space-y-1 text-center">
+                        <div><strong>Benchmark Complete in ${benchmarkTime}ms</strong></div>
+                        <div>Overall Reduction: <strong class="${overallColor}">${overallRatio.toFixed(1)}%</strong></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            (${totalCompressed} bytes from ${totalOriginal}) | All verified: ${results.every(r => r.verified) ? '✅' : '❌'}
+                        </div>
+                    </div>
+                `;
+                setStats('', 'info');
+                
+                const benchmarkDetailsHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="font-semibold">
+                                <tr>
+                                    <th class="p-2">Position</th>
+                                    <th class="p-2 text-right">Ratio</th>
+                                    <th class="p-2 text-right">Sizes</th>
+                                    <th class="p-2">Mode</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-blue-200 dark:divide-blue-800">
+                                ${results.map(r => `
+                                    <tr>
+                                        <td class="p-2 font-mono text-xs">${r.position}</td>
+                                        <td class="p-2 text-right font-semibold ${r.ratio > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${r.ratio.toFixed(1)}%</td>
+                                        <td class="p-2 text-right text-xs">${r.compressed}/${r.original}</td>
+                                        <td class="p-2 text-xs">${r.mode}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                showAlgorithmDetails(benchmarkDetailsHTML);
+            }, 50); // Timeout to allow UI to update
+        } catch (e) {
+            console.error(e);
+            setStats(`Benchmark Error: ${e.message}`, 'error');
+            hideAlgorithmDetails();
+        }
+    });
+};
+</script>
+</body>
+</html>
