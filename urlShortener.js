@@ -1,4 +1,4 @@
-// Exports: encodeFenForUrl, decodeFenFromUrl
+// Exports: encodeFenForUrl, decodeFenFromUrl, v2
 
 // Optimized FEN URL shortener implementing:
 // - presence-mask per-piece streams (no per-piece index bytes)
